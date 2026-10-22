@@ -82,20 +82,24 @@ class ContainerVerifier:
                                  capture_output=True,text=True,encoding="utf-8",
                                  timeout=timeout or self.timeout)
         except subprocess.CalledProcessError as exc:
-            values = list(self.private_values)
-            key_path = Path(self.env.get("PAPERLENS_LLM_KEY_FILE_HOST") or ".cache/local-llm/api-key.txt")
-            if not key_path.is_absolute():key_path = self.root/key_path
-            try:values.append(key_path.read_text(encoding="ascii").strip())
-            except (OSError,UnicodeError):pass
-            values += [v for k,v in self.env.items() if re.search("TOKEN|PASSWORD|SECRET",k,re.I)]
-            def decoded(value):return value.decode("utf-8",errors="replace") if isinstance(value,bytes) else (value or "")
-            output = decoded(exc.stdout)+"\n"+decoded(exc.stderr)
-            for value in values:
-                if len(value) >= 8:output = output.replace(value,"[REDACTED]")
-            output = re.sub(r"(?i)Bearer\s+[A-Za-z0-9_.~+/-]+=*","Bearer [REDACTED]",output)
-            self.report["command_error"] = {"exit_code":exc.returncode,"output_tail":output[-6000:]}
+            self.report["command_error"] = {"exit_code":exc.returncode,
+                "output_tail":self.safe_diagnostic(exc.stdout,exc.stderr)}
             raise
         return result.stdout.strip()
+
+    def safe_diagnostic(self,*parts):
+        values = list(self.private_values)
+        key_path = Path(self.env.get("PAPERLENS_LLM_KEY_FILE_HOST") or ".cache/local-llm/api-key.txt")
+        if not key_path.is_absolute():key_path = self.root/key_path
+        try:values.append(key_path.read_text(encoding="ascii").strip())
+        except (OSError,UnicodeError):pass
+        values += [v for k,v in self.env.items() if re.search("TOKEN|PASSWORD|SECRET",k,re.I)]
+        def decoded(value):return value.decode("utf-8",errors="replace") if isinstance(value,bytes) else (value or "")
+        output = "\n".join(decoded(v) for v in parts)
+        for value in values:
+            if len(value) >= 8:output = output.replace(value,"[REDACTED]")
+        output = re.sub(r"(?i)Bearer\s+[A-Za-z0-9_.~+/-]+=*","Bearer [REDACTED]",output)
+        return output[-6000:]
 
     def step(self,name):
         self.phase = name
@@ -284,6 +288,17 @@ class ContainerVerifier:
         except (Exception,KeyboardInterrupt) as exc:
             self.report["failure"] = {"phase":self.phase,"type":type(exc).__name__,
                                       "message":"Verification did not complete. No credentials or response bodies are recorded."}
+            if cleanup_needed:
+                if self.report.get("last_readiness",{}).get("checks",{}).get("bootstrap") is False:
+                    try:
+                        self.command("exec","-T","paperlens","python","-c",
+                            "from pathlib import Path; from paperlens.deployment import _marker_assets; _marker_assets(Path('/app'))",timeout=20)
+                    except Exception:pass
+                try:
+                    self.report["container_logs_tail"] = self.safe_diagnostic(
+                        self.command("logs","--no-color","--tail","50","llm","paperlens",timeout=20))
+                except Exception:
+                    self.report["diagnostics_available"] = False
         finally:
             cleanup_ok = True
             if cleanup_needed:

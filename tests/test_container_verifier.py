@@ -131,3 +131,31 @@ def test_command_failure_records_bounded_diagnostics_with_credentials_redacted(t
     assert verifier.report["command_error"]["exit_code"] == 7
     assert len(verifier.report["command_error"]["output_tail"]) <= 6000
     assert "[REDACTED]" in verifier.report["command_error"]["output_tail"]
+
+def test_failed_run_keeps_useful_logs_but_never_model_key_or_admin_password(tmp_path):
+    key = "private-model-key-from-failed-container-12345"
+    key_path = tmp_path / "model.key"
+    key_path.write_text(key)
+    admin_password = []
+    def runner(command, **kwargs):
+        if "--password-stdin" in command:
+            admin_password.append(kwargs["input"].strip())
+        if command[-1:] == ["bootstrap"]:
+            raise RuntimeError("bootstrap interrupted")
+        if "logs" in command:
+            out = "Model failed to start; key="+key+"; admin="+admin_password[0]
+        elif command[1:2] == ["version"]:
+            out = "linux"
+        elif command[1:3] == ["context","inspect"]:
+            out = "unix:///var/run/docker.sock"
+        else:
+            out = ""
+        return subprocess.CompletedProcess(command,0,stdout=out)
+    verifier = ContainerVerifier(tmp_path,runner=runner,asset_check=lambda *a:None)
+    verifier.env.pop("DOCKER_HOST",None)
+    verifier.env["PAPERLENS_LLM_KEY_FILE_HOST"] = str(key_path)
+    report = verifier.run()
+    assert not report["passed"] and report["cleanup_passed"]
+    assert "Model failed to start" in report["container_logs_tail"]
+    assert key not in json.dumps(report)
+    assert admin_password[0] not in json.dumps(report)

@@ -41,6 +41,19 @@ def verify_pinned_assets(root):
             if hashlib.file_digest(source,"sha256").hexdigest() != digest:
                 raise RuntimeError("A downloaded public asset failed its pinned checksum.")
 
+def inference_assets(root):
+    """Inventory runtime models/configs, excluding volatile download/cache bookkeeping."""
+    assets = []
+    suffixes = {".onnx",".onnx_data",".json",".txt",".model",".bin",".safetensors"}
+    for family in ("embeddings","reranker","nli"):
+        folder = Path(root)/".cache"/family
+        for path in folder.rglob("*"):
+            parts = path.relative_to(folder).parts
+            if any(p.startswith((".","parts")) or ".invalid-" in p for p in parts):continue
+            if path.is_file() and path.stat().st_size > 0 and path.suffix.lower() in suffixes:
+                assets.append(path)
+    return assets
+
 def bootstrap(root=ROOT):
     root = Path(root)
     store = Store(root/"data")
@@ -73,7 +86,7 @@ def bootstrap(root=ROOT):
     RapidOCR()  # Load the package's CPU OCR models before declaring setup complete.
     if not index_ready(store):
         raise RuntimeError("The public-paper index is incomplete.")
-    assets = [p for p in (root/".cache").rglob("*") if p.is_file() and p.stat().st_size > 0 and not any(part.startswith(("parts",".locks")) or ".invalid-" in part for part in p.parts)]
+    assets = inference_assets(root)
     write_marker(root,assets)
     print("Container bootstrap completed; assets, CPU inference and index checked.",flush=True)
 

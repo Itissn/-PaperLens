@@ -48,6 +48,13 @@ services:
   llm:
     image: ghcr.io/ggml-org/llama.cpp:server-b10868@sha256:adcaa8dcf950de0a5c826e265d823b49d6426dec90b7c616e3ddbe6421e4dad2
     platform: linux/amd64
+    # The upstream image probes 8080; this service explicitly binds 8766.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8766/health"]
+      interval: 15s
+      timeout: 3s
+      start_period: 120s
+      retries: 4
     command: ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8766", "--jinja", "--ctx-size", "8192", "--threads", "6", "--parallel", "1", "--alias", "paperlens-qwen", "--api-key-file", "/run/secrets/llm_key", "--no-webui"]
     volumes:
       - type: bind

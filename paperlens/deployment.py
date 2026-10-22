@@ -16,10 +16,12 @@ def _marker_assets(root):
     cache = (root/".cache").resolve()
     for item in marker["assets"]:
         path = (root/item["path"]).resolve()
-        if not path.is_relative_to(cache) or not path.is_file():
+        if not path.is_relative_to(cache):
             raise ValueError("Invalid bootstrap asset.")
+        if not path.is_file():
+            raise ValueError("Missing bootstrap asset: "+item["path"])
         if not isinstance(item["bytes"], int) or item["bytes"] <= 0 or path.stat().st_size != item["bytes"]:
-            raise ValueError("Incomplete bootstrap asset.")
+            raise ValueError("Changed bootstrap asset size: "+item["path"])
         result.append((path, item))
     return result
 

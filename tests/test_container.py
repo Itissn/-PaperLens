@@ -16,8 +16,8 @@ def prepared(tmp_path):
     Auth(store,True).create_user("admin","FixturePassword123!","admin")
     ingest_bytes(store,make_pdf(),"Fixture paper")
     embed_pending(store,FakeEmbedder())
-    asset=tmp_path/".cache"/"fixture.onnx"
-    asset.parent.mkdir();asset.write_bytes(b"fixture-model")
+    asset=tmp_path/".cache"/"embeddings"/"fixture.onnx"
+    asset.parent.mkdir(parents=True);asset.write_bytes(b"fixture-model")
     write_marker(tmp_path,[asset])
     return store,asset
 
@@ -120,6 +120,7 @@ def test_compose_security_and_startup_contract():
     config=yaml.safe_load((root/"compose.yaml").read_text(encoding="utf-8"))
     app=config["services"]["paperlens"];model=config["services"]["llm"]
     assert app["ports"]==["127.0.0.1:${PAPERLENS_PORT:-8767}:8765"]
+    assert model["healthcheck"]["test"] == ["CMD","curl","-fsS","http://127.0.0.1:8766/health"]
     assert "ports" not in model
     assert app["depends_on"]["bootstrap"]["condition"]=="service_completed_successfully"
     assert app["read_only"] and app["cap_drop"]==["ALL"]
@@ -169,3 +170,23 @@ def test_malformed_model_json_is_not_ready(tmp_path,monkeypatch):
     for payloads in ([b"[]"],[b'{"status":"ok"}',b'{"data":null}']):
         with patch("urllib.request.urlopen",side_effect=[Response(x) for x in payloads]):
             assert not probe_model()
+
+
+def test_bootstrap_inventory_ignores_volatile_cache_and_private_key_files(tmp_path):
+    from scripts.container_bootstrap import inference_assets
+    model = tmp_path / ".cache/embeddings/model.onnx"
+    config = tmp_path / ".cache/nli/config.json"
+    metadata = tmp_path / ".cache/embeddings/.cache/download/model.metadata"
+    log = tmp_path / ".cache/embeddings/download.log"
+    key = tmp_path / ".cache/local-llm/api-key.txt"
+    for path,data in [(model,b"public-weights"),(config,b"{}"),(metadata,b"temporary"),(log,b"changing log"),(key,b"private-key")]:
+        path.parent.mkdir(parents=True,exist_ok=True)
+        path.write_bytes(data)
+    assets = inference_assets(tmp_path)
+    assert set(assets) == {model,config}
+    write_marker(tmp_path,assets)
+    metadata.unlink()
+    log.write_bytes(b"new log contents")
+    assert marker_valid(tmp_path,verify_hashes=True)
+    model.write_bytes(b"broken-weights")
+    assert not marker_valid(tmp_path,verify_hashes=True)
