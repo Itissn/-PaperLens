@@ -61,3 +61,22 @@ def test_ci_credentials_are_generated_privately_and_never_replace_a_key(tmp_path
     prepare_assets(tmp_path)
     assert key.read_text() == first
     assert first.strip() not in capsys.readouterr().out
+
+def test_nli_setup_bootstraps_a_clean_clone_without_preexisting_cache(tmp_path, monkeypatch):
+    from scripts import setup_nli
+    data = b"onnx"
+    monkeypatch.setattr(setup_nli, "ROOT", tmp_path)
+    monkeypatch.setattr(setup_nli, "SIZE", len(data))
+    monkeypatch.setattr(setup_nli, "SHA", hashlib.sha256(data).hexdigest())
+    class Part(io.BytesIO):
+        status = 206
+        headers = {"Content-Range": "bytes 0-3/4"}
+    def opened(request, timeout):
+        if isinstance(request, str):
+            return io.BytesIO(b"{}")
+        return Part(data)
+    monkeypatch.setattr(setup_nli.urllib.request, "urlopen", opened)
+    setup_nli.main()
+    folder = tmp_path / ".cache/nli"
+    assert (folder / "model.onnx").read_bytes() == data
+    assert (folder / "provenance.json").is_file()

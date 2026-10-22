@@ -48,13 +48,14 @@ The administrator password is requested privately by the CLI. Open **http://127.
 
 ```bash
 python -m pip install -r requirements-ci.txt
+python -m scripts.setup_nli
 python -m pytest tests -q -p no:cacheprovider
 # Opt-in: builds a separate image, runs real inference/OCR/auth/persistence,
 # and removes only its uniquely named test containers and volumes.
 python -m scripts.verify_container --run
 ```
 
-GitHub Actions runs the fixture regression suite, then builds and exercises the Linux Compose stack with real local Qwen inference, OCR and container recreation. A successful main-branch push publishes the **same tested app image** to `ghcr.io/itissn/paperlens:sha-<commit>`; PR runs never publish. See the [workflow](.github/workflows/ci.yml) for actual checks and [Actions](https://github.com/Itissn/-PaperLens/actions) for run results. Configuration alone does not prove a successful run.
+GitHub Actions runs fixture regressions and a real NLI paraphrase/contradiction check, then builds and exercises the Linux Compose stack with real local Qwen inference, OCR and container recreation. A successful main-branch push publishes the **same tested app image** to `ghcr.io/itissn/paperlens:sha-<commit>`; PR runs never publish. See the [workflow](.github/workflows/ci.yml) for actual checks and [Actions](https://github.com/Itissn/-PaperLens/actions) for run results. Configuration alone does not prove a successful run.
 
 Image publication is continuous delivery. GitHub Pages cannot run this Python/model service; an always-on live application requires a separate Docker host, HTTPS and deployment-specific configuration. No cloud host is provisioned by this repository.
 

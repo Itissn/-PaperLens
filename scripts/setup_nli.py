@@ -8,7 +8,7 @@ REV="2a4f614a701367a02d51389039afc998faeda637"
 SHA="3fac2500c45c75af42c7711de0d1b93d59577456100208be0dc1f9e8811946b6"
 SIZE=87246587
 def main():
-    folder=ROOT/".cache"/"nli";folder.mkdir(exist_ok=True)
+    folder=ROOT/".cache"/"nli";folder.mkdir(parents=True,exist_ok=True)
     target=folder/"model.onnx"
     if not target.exists():
         parts=folder/"parts";parts.mkdir(exist_ok=True)
@@ -26,7 +26,8 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:list(pool.map(fetch,starts))
         with target.open("wb") as out:
             for start in starts:out.write((parts/str(start)).read_bytes())
-    if hashlib.file_digest(target.open("rb"),"sha256").hexdigest()!=SHA:raise ValueError("NLI model hash mismatch")
+    with target.open("rb") as source:
+        if hashlib.file_digest(source,"sha256").hexdigest()!=SHA:raise ValueError("NLI model hash mismatch")
     assets={}
     for name in ("tokenizer.json","tokenizer_config.json","config.json"):
         p=folder/name
