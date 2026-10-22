@@ -80,3 +80,14 @@ def test_nli_setup_bootstraps_a_clean_clone_without_preexisting_cache(tmp_path, 
     folder = tmp_path / ".cache/nli"
     assert (folder / "model.onnx").read_bytes() == data
     assert (folder / "provenance.json").is_file()
+
+def test_new_posix_secret_is_mount_readable_but_parent_directory_is_private(tmp_path, monkeypatch):
+    import os
+    import stat
+    if os.name != "posix":
+        return  # Windows access is controlled by ACLs, not POSIX mode bits.
+    monkeypatch.setattr("scripts.prepare_ci_assets.download_verified", lambda *a, **k: None)
+    prepare_assets(tmp_path)
+    key = tmp_path / ".cache/local-llm/api-key.txt"
+    assert stat.S_IMODE(key.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(key.stat().st_mode) == 0o644

@@ -54,6 +54,11 @@ def prepare_assets(root=ROOT):
     except FileExistsError:
         pass  # Preserve local credentials when a developer runs this script.
     else:
+        # Compose file secrets are bind mounts: UID 10001 must read the file.
+        # A private host directory prevents other host users from traversing it.
+        if os.name == "posix":
+            key.parent.chmod(0o700)
+            os.fchmod(fd, 0o644)
         with os.fdopen(fd, "w", encoding="ascii") as output:
             output.write(secrets.token_urlsafe(48) + "\n")
     print("Pinned public model verified; private model key is available.", flush=True)

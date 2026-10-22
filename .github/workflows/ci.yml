@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: paperlens-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PYTHONUTF8: "1"

@@ -82,6 +82,7 @@ class ContainerVerifier:
 
     def step(self,name):
         self.phase = name
+        print("Container check: "+name,flush=True)
 
     def passed(self):
         self.report["checks"].append({"name":self.phase,"passed":True})
@@ -220,6 +221,10 @@ class ContainerVerifier:
             password = secrets.token_urlsafe(24)
             self.command("run","--rm","--no-deps","-T","paperlens","python","manage.py",
                          "user-add","--username","verifier_admin","--role","admin","--password-stdin",password=password)
+            self.passed()
+            self.step("non-root mounted model key access")
+            self.command("run","--rm","--no-deps","-T","paperlens","python","-c",
+                         "import os; from pathlib import Path; assert os.geteuid()==10001; assert len(Path('/run/secrets/llm_key').read_text().strip())>=32")
             self.passed()
             self.step("corpus model and index bootstrap")
             self.command("run","--rm","--no-deps","bootstrap")
