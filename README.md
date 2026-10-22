@@ -28,6 +28,10 @@ English web UI -> FastAPI -> bounded Agent / direct retrieval
 
 Final source-page reads performed by the controller are labelled separately from model-selected tool actions. Answers can still be incomplete, wrong or conservatively withheld; a passed smoke check is not a general accuracy claim.
 
+## Run on the configured Windows computer
+
+Double-click `Start.cmd`, then open **http://127.0.0.1:8765**. This native path reuses the installed Python runtime and local models; it does not require Docker, WSL or a Windows restart. It listens only on loopback and is a personal, no-login configuration. It is available while the computer and project processes are running. For start/stop commands, data locations and backup limits, see the [local deployment guide](docs/LOCAL_DEPLOYMENT.zh-CN.md).
+
 ## Run with Docker Compose
 
 Python 3.12 and a working Linux Docker daemon are required. Downloaded Qwen/embedding/reranker/NLI assets, credentials, user data and local reports are excluded from this repository and app image. RapidOCR includes its packaged OCR models as a dependency.
