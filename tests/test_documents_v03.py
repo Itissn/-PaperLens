@@ -24,3 +24,17 @@ def test_scanned_upload_is_indexed_and_retrievable(tmp_path):
         assert con.execute("SELECT method FROM document_pages WHERE document_id=?",(doc["id"],)).fetchone()[0]=="ocr"
     result=client.post("/api/ask",json={"question":"How many random seeds?","mode":"lexical"}).json()
     assert result["status"]=="evidence" and "30" in result["paragraphs"][0]["text"]
+
+
+def test_structured_demo_can_be_uploaded_and_inspected_through_the_api(tmp_path):
+    from fastapi.testclient import TestClient
+    from paperlens.api import create_app
+    from test_api import FakeEmbedder
+    client = TestClient(create_app(tmp_path,FakeEmbedder()))
+    response = client.post("/api/documents",files={"file":("structure.pdf",structured_pdf(),"application/pdf")})
+    assert response.status_code == 200,response.text
+    doc_id = response.json()["document"]["id"]
+    page = client.get(f"/api/documents/{doc_id}/pages/1/structure")
+    assert page.status_code == 200
+    assert page.json()["tables"][0]["rows"] == [["Method","Seeds"],["Baseline","30"]]
+    assert page.json()["formulas"][0]["symbolic"]["parsed"]

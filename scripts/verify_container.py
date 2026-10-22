@@ -207,7 +207,8 @@ class ContainerVerifier:
             scan_id = scan.json()["document"]["id"]
             page = admin.get("/api/documents/"+scan_id+"/pages/1/structure?ocr=true")
             page.raise_for_status()
-            assert "30" in json.dumps(page.json())
+            ocr_text = " ".join(line["text"] for line in page.json()["ocr_lines"]).lower()
+            assert "30" in ocr_text and "random seeds" in ocr_text
             table = admin.post("/api/documents",files={"file":("container-structure-fixture.pdf",structured_pdf(),"application/pdf")})
             table.raise_for_status()
             table_id = table.json()["document"]["id"]

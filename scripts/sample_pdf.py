@@ -13,4 +13,8 @@ def structured_pdf():
     for y in (50,100,150):page.draw_line((50,y),(350,y))
     for x,y,text in ((60,80,"Method"),(210,80,"Seeds"),(60,130,"Baseline"),(210,130,"30")):page.insert_text((x,y),text)
     page.insert_text((50,220),"f(x) = x + 1")
+    page.insert_textbox(pymupdf.Rect(50,270,545,360),
+        "The table reports the number of random seeds used by the baseline method. "
+        "The expression above is a simple formula included to verify source-region "
+        "rendering and structured extraction from a research document.",fontsize=11)
     return doc.tobytes()
