@@ -60,6 +60,7 @@ class ContainerVerifier:
         self.asset_check = asset_check
         self.timeout = timeout
         self.keep_image = keep_image
+        self.private_values = []
         self.project = "paperlens-verify-"+uuid.uuid4().hex[:12]
         self.image = self.project+":test"
         self.env = dict(os.environ)
@@ -74,10 +75,26 @@ class ContainerVerifier:
 
     def command(self,*args,compose=True,password=None,timeout=None):
         command = (self.base if compose else ["docker"])+list(args)
-        result = self.runner(command,cwd=self.root,env=self.env,check=True,
-                             input=(password+"\n") if password is not None else None,
-                             capture_output=True,text=True,encoding="utf-8",
-                             timeout=timeout or self.timeout)
+        if password is not None:self.private_values.append(password)
+        try:
+            result = self.runner(command,cwd=self.root,env=self.env,check=True,
+                                 input=(password+"\n") if password is not None else None,
+                                 capture_output=True,text=True,encoding="utf-8",
+                                 timeout=timeout or self.timeout)
+        except subprocess.CalledProcessError as exc:
+            values = list(self.private_values)
+            key_path = Path(self.env.get("PAPERLENS_LLM_KEY_FILE_HOST") or ".cache/local-llm/api-key.txt")
+            if not key_path.is_absolute():key_path = self.root/key_path
+            try:values.append(key_path.read_text(encoding="ascii").strip())
+            except (OSError,UnicodeError):pass
+            values += [v for k,v in self.env.items() if re.search("TOKEN|PASSWORD|SECRET",k,re.I)]
+            def decoded(value):return value.decode("utf-8",errors="replace") if isinstance(value,bytes) else (value or "")
+            output = decoded(exc.stdout)+"\n"+decoded(exc.stderr)
+            for value in values:
+                if len(value) >= 8:output = output.replace(value,"[REDACTED]")
+            output = re.sub(r"(?i)Bearer\s+[A-Za-z0-9_.~+/-]+=*","Bearer [REDACTED]",output)
+            self.report["command_error"] = {"exit_code":exc.returncode,"output_tail":output[-6000:]}
+            raise
         return result.stdout.strip()
 
     def step(self,name):
@@ -89,13 +106,37 @@ class ContainerVerifier:
 
     def wait_ready(self,client):
         end = time.monotonic()+self.timeout
+        next_state_check = 0
+        restarting = {}
         while time.monotonic() < end:
             try:
                 response = client.get("/api/readiness",timeout=8)
-                if response.status_code == 200 and response.json().get("ready"):
+                body = response.json()
+                if response.status_code == 200 and body.get("ready"):
                     return
+                checks = body.get("checks",{}) if isinstance(body,dict) else {}
+                self.report["last_readiness"] = {"status_code":response.status_code,
+                    "checks":{k:v for k,v in checks.items() if isinstance(v,bool)}}
             except Exception:
                 pass
+            if time.monotonic() >= next_state_check:
+                raw = self.command("ps","--all","--format","json",timeout=20)
+                if raw:
+                    try:
+                        states = json.loads(raw)
+                        if isinstance(states,dict):states = [states]
+                    except json.JSONDecodeError:
+                        states = [json.loads(line) for line in raw.splitlines() if line.strip()]
+                    for state in states:
+                        service = state.get("Service")
+                        if service not in ("paperlens","llm"):continue
+                        health = state.get("Health","")
+                        status = state.get("State","")
+                        restarting[service] = restarting.get(service,0)+1 if status == "restarting" else 0
+                        if health == "unhealthy" or status in ("exited","dead","removing") or restarting[service] >= 3:
+                            self.report["failed_container"] = {"service":service,"state":status,"health":health}
+                            raise VerificationFailure("Required container is unhealthy, stopped or repeatedly restarting.")
+                next_state_check = time.monotonic()+15
             time.sleep(2)
         raise VerificationFailure("Container readiness timed out.")
 
@@ -133,6 +174,12 @@ class ContainerVerifier:
                 "generator":"local_llm","mode":"hybrid"},timeout=httpx.Timeout(900,connect=10)) as response:
                 response.raise_for_status()
                 events,result = read_events(response.iter_lines())
+            self.report["agent"] = {"status":result.get("status"),
+                "tool_calls":result.get("agent",{}).get("tool_calls"),
+                "source_validation":bool(result.get("validation",{}).get("passed")),
+                "semantic_check":bool(result.get("semantic_check",{}).get("passed")),
+                "all_cited_pages_read":bool(result.get("agent",{}).get("all_cited_pages_read")),
+                "sse_drafts":"draft" in events}
             assert_agent_result(events,result)
             self.report["agent"] = {"status":result["status"],"tool_calls":result["agent"]["tool_calls"],
                                     "source_checks_passed":True,"sse_drafts":True}

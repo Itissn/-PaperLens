@@ -96,3 +96,38 @@ def test_ci_cleanup_failure_removes_image_and_prevents_publication(tmp_path, mon
     report = verifier.run()
     assert not report["passed"] and not report["image_retained"]
     assert any(c[1:3] == ["image", "rm"] for c in calls)
+
+def test_readiness_fails_fast_when_a_required_container_is_unhealthy(tmp_path):
+    class Response:
+        status_code = 503
+        def json(self):
+            return {"ready":False,"checks":{"model":False},"private":"DO-NOT-RECORD"}
+    class Client:
+        def get(self, *args, **kwargs):
+            return Response()
+    def runner(command, **kwargs):
+        state = {"Service":"paperlens","State":"running","Health":"unhealthy"}
+        return subprocess.CompletedProcess(command,0,stdout=json.dumps(state))
+    verifier = ContainerVerifier(tmp_path,runner=runner,timeout=0.01)
+    with pytest.raises(VerificationFailure,match="unhealthy"):
+        verifier.wait_ready(Client())
+    assert verifier.report["last_readiness"] == {"status_code":503,"checks":{"model":False}}
+    assert "DO-NOT-RECORD" not in json.dumps(verifier.report)
+
+
+def test_command_failure_records_bounded_diagnostics_with_credentials_redacted(tmp_path):
+    password = "private-administrator-password"
+    key = "private-model-token-1234567890123456"
+    key_path = tmp_path / "key"
+    key_path.write_text(key)
+    def runner(command, **kwargs):
+        raise subprocess.CalledProcessError(7,command,output=password,stderr="x"*10000+"\nError: "+key+"\n"+password)
+    verifier = ContainerVerifier(tmp_path,runner=runner)
+    verifier.env["PAPERLENS_LLM_KEY_FILE_HOST"] = str(key_path)
+    with pytest.raises(subprocess.CalledProcessError):
+        verifier.command("build",password=password)
+    result = json.dumps(verifier.report)
+    assert password not in result and key not in result
+    assert verifier.report["command_error"]["exit_code"] == 7
+    assert len(verifier.report["command_error"]["output_tail"]) <= 6000
+    assert "[REDACTED]" in verifier.report["command_error"]["output_tail"]

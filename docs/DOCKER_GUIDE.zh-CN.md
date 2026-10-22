@@ -1,9 +1,6 @@
-最新状态：[首次重启后的修复及剩余步骤](POST_REBOOT_STATUS.zh-CN.md)。
-
 # PaperLens Docker 使用与学习说明
 
-Docker 代码、初始化和验证脚本已完成。按你后续授权，WSL 3.0.3 和 Docker Desktop 4.96.1 已安装到 E 盘，必要的 Windows 组件也已启用；没有重启电脑。系统提示组件需重启后生效，因此当前仍没有构建或运行容器。详见[安装状态](CONTAINER_INSTALLATION_STATUS.zh-CN.md)。
-
+Docker 路径包含公开资源初始化、非 root 应用、独立模型服务和真实集成验证。当前远端运行结果请看 [GitHub Actions](https://github.com/Itissn/-PaperLens/actions)，持续交付流程见 [CI/CD 学习说明](CI_CD_GUIDE.zh-CN.md)。本机 Docker 是否就绪需要单独检查；远端 Linux runner 的结果不代表本机 Windows 引擎已可用。
 ## 三个服务如何配合
 
 | 服务 | 职责 | 数据 |
@@ -77,9 +74,9 @@ docker compose up -d
 5. 强制重建应用容器后，账户、登录会话、索引和对话仍保留。
 6. 退出登录后会话失效。
 
-结束或失败后，只清理此次唯一项目的容器、数据卷和镜像。不会停止原生进程或删除主机 GGUF。若清理失败，报告仍判定失败并保留项目名称供排查。遇到模型拒答、引用不满足要求或推理失败，也不会算通过。
+结束或失败后，只清理此次唯一项目的容器、数据卷和镜像。CI 可用 --keep-image 仅保留全部检查及清理成功后的同一镜像用于发布；测试数据卷仍删除。不会停止原生进程或删除主机 GGUF。若清理失败，报告仍判定失败并保留项目名称供排查。遇到模型拒答、引用不满足要求或推理失败，也不会算通过。
 
-结果写入 reports/container-runtime-verification.json，报告不记录密码、密钥、Cookie 或完整回答。当前尚未执行这个真实验证流程。
+结果写入 reports/container-runtime-verification.json，报告不记录密码、密钥、Cookie 或完整回答。实际执行状态和提交版本以对应 GitHub Actions 运行记录为准。
 
 ## 文件与检查边界
 
