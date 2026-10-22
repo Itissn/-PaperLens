@@ -1,0 +1,14 @@
+{
+  "data/papers/2505.15839v1.pdf": "9765220b99ed60185873f98627cb50c80436918804fd7f40b1572a4d055c765c",
+  "data/papers/2609.24105v1.pdf": "3fd6162408230bdf41bf84ee763359afdbbedb4d6c34f23168427784a184479b",
+  "data/papers/2609.24104v1.pdf": "24dd62f1cc5be4ca04d47f5d6cdcfa3f6ecfc3ae1b2d17eb9ba3ecf90175cd0e",
+  ".cache/nli/model.onnx": "3fac2500c45c75af42c7711de0d1b93d59577456100208be0dc1f9e8811946b6",
+  ".cache/nli/config.json": "ec0bd14cc28640326474399cd61d38ccd52b64900228799d0f81debda8c4bc53",
+  ".cache/nli/tokenizer.json": "a86f883318afa11c8c10466f1bf4efaeb6ded28a52cbe57217a8fa0d0a2a87df",
+  ".cache/nli/tokenizer_config.json": "d8d3bb123b99317634d5ee3d1d2d8b2ddb01510a0654687fc2639a5347a7291f",
+  ".cache/reranker/verified-model/onnx/model.onnx": "c623d0bcb99f4622beb413eaef00cfbe5db20df9f1dd982da4b4f26022881870",
+  ".cache/reranker/verified-model/config.json": "d827779a72d27ae68cf878a6fc2e954542663fe21ca515d9f4783fc96be2d37e",
+  ".cache/reranker/verified-model/tokenizer.json": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+  ".cache/reranker/verified-model/tokenizer_config.json": "0b29c7bfc889e53b36d9dd3e686dd4300f6525110eaa98c76a5dafceb2029f53",
+  ".cache/reranker/verified-model/special_tokens_map.json": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3"
+}

@@ -1,0 +1,19 @@
+# Local execution, downloaded models, databases, credentials and generated evidence.
+.runtime/
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+data/
+reports/
+.env
+.env.*
+!.env.example
+*.log
+*.gguf
+*.onnx
+*.sqlite*
+*.db
+*.pem
+*.key

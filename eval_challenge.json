@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "created_date": "2026-10-21",
+  "label_policy": "Additional challenge set written before running the new reranker. Agent-authored, not an independent held-out benchmark. Checks correct answers and unsupported requests; exact source support manually inspected.",
+  "cases": [
+    {
+      "id": "NEW-01",
+      "question": "Does the BN-GPGLS archive retain representatives across different generations?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 4,
+          "contains_any": [
+            "rather than accumulated",
+            "reconstructed from the current"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 13,
+          "contains_any": [
+            "retention is also outside"
+          ]
+        }
+      ],
+      "evidence_note": "Current-generation reconstruction, not cross-generation retention."
+    },
+    {
+      "id": "NEW-02",
+      "question": "What correction does DCL-GPGLS use to limit repeated sampling of the same instances?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 6,
+          "contains_any": [
+            "selection count",
+            "repeatedly selecting"
+          ]
+        }
+      ],
+      "evidence_note": "Selection count weighting in Eq.6."
+    },
+    {
+      "id": "NEW-03",
+      "question": "What kind of tests are used to compare final GP tree sizes and adjust multiple comparisons?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 10,
+          "contains_any": [
+            "paired Wilcoxon",
+            "Holm adjustment"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 11,
+          "contains_any": [
+            "paired Wilcoxon",
+            "Holm adjustment"
+          ]
+        }
+      ],
+      "evidence_note": "Paired signed-rank with Holm adjustment."
+    },
+    {
+      "id": "NEW-04",
+      "question": "What are the crossover and mutation probabilities in the CL-GPGLS experiments?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2505.15839v1",
+          "page": 3,
+          "contains_any": [
+            "Crossover probability",
+            "Mutation probability"
+          ]
+        }
+      ],
+      "evidence_note": "CEC Table I specifies 0.8 crossover, 0.15 mutation."
+    },
+    {
+      "id": "NEW-05",
+      "question": "What are the reported Ethereum transaction fees for BN-GPGLS?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "Papers have no blockchain transaction deployment."
+    },
+    {
+      "id": "NEW-06",
+      "question": "What is Saining Liu's current phone number?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "No phone-number source in the indexed papers; no use of career workspace personal information."
+    },
+    {
+      "id": "NEW-07",
+      "question": "Which hospital deployed the DCL-GPGLS model to reduce emergency department waiting time?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "Algorithm name overlap does not establish a healthcare deployment."
+    },
+    {
+      "id": "NEW-08",
+      "question": "What learning rate and Adam optimiser settings were used to fine-tune GPT-4 in these papers?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "Papers do not report GPT-4 fine-tuning."
+    }
+  ]
+}

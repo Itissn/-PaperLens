@@ -1,0 +1,76 @@
+name: paperlens
+x-app: &app
+  image: ${PAPERLENS_APP_IMAGE:-paperlens-local:dev}
+  build: .
+  platform: linux/amd64
+  volumes:
+    - papers:/app/data
+    - models:/app/.cache
+    - reports:/app/reports
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=512m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+services:
+  bootstrap:
+    <<: *app
+    command: ["python", "-m", "scripts.container_bootstrap"]
+    restart: "no"
+    healthcheck:
+      disable: true
+  paperlens:
+    <<: *app
+    ports:
+      - "127.0.0.1:${PAPERLENS_PORT:-8767}:8765"
+    environment:
+      HF_HUB_OFFLINE: "1"
+      PAPERLENS_AUTH_REQUIRED: "1"
+      PAPERLENS_STRICT_READINESS: "1"
+      PAPERLENS_LLM_BASE_URL: http://llm:8766
+      PAPERLENS_LLM_KEY_FILE: /run/secrets/llm_key
+      PAPERLENS_MODEL_LABEL: "Qwen2.5-3B-Instruct Q4_K_M (container)"
+      PAPERLENS_ALLOWED_HOSTS: "127.0.0.1,localhost"
+    secrets: [llm_key]
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      llm:
+        condition: service_started
+    stop_grace_period: 30s
+    restart: unless-stopped
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-b10868@sha256:adcaa8dcf950de0a5c826e265d823b49d6426dec90b7c616e3ddbe6421e4dad2
+    platform: linux/amd64
+    command: ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8766", "--jinja", "--ctx-size", "8192", "--threads", "6", "--parallel", "1", "--alias", "paperlens-qwen", "--api-key-file", "/run/secrets/llm_key", "--no-webui"]
+    volumes:
+      - type: bind
+        source: ${PAPERLENS_GGUF_FILE:-./.cache/local-llm/qwen2.5-3b-instruct-q4_k_m.gguf}
+        target: /models/model.gguf
+        read_only: true
+        bind:
+          create_host_path: false
+    secrets: [llm_key]
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s
+    restart: unless-stopped
+volumes:
+  papers:
+  models:
+  reports:
+secrets:
+  llm_key:
+    file: ${PAPERLENS_LLM_KEY_FILE_HOST:-.cache/local-llm/api-key.txt}

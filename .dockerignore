@@ -1,0 +1,17 @@
+# Only application source and explicitly selected Linux setup scripts enter the build context.
+**
+!Dockerfile
+!requirements-container.txt
+!manage.py
+!paperlens/
+!paperlens/*.py
+!web/
+!web/*.html
+!web/*.css
+!web/*.js
+!scripts/
+!scripts/download_corpus.py
+!scripts/setup_reranker.py
+!scripts/setup_nli.py
+!scripts/container_bootstrap.py
+!scripts/container-assets.json

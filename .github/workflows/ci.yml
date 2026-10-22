@@ -1,0 +1,103 @@
+name: Test and deliver PaperLens
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paperlens-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  tests:
+    name: Python regression tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-container.txt
+            requirements-ci.txt
+      - name: Install application and test dependencies
+        run: python -m pip install -r requirements-ci.txt
+      - name: Validate Python environment
+        run: python -m pip check
+      - name: Run regression tests without model/network calls
+        run: python -m pytest tests -q -p no:cacheprovider --junitxml=reports/pytest.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: python-test-results
+          path: reports/pytest.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  containers:
+    name: Real Linux containers and tested image delivery
+    needs: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    env:
+      OMP_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-container.txt
+      - name: Install host-side verification dependencies
+        run: python -m pip install httpx==0.28.1 pymupdf==1.27.2.3
+      - name: Verify the runner's local Linux daemon
+        run: |
+          docker version
+          docker compose version
+          test "$(docker version --format '{{.Server.Os}}')" = linux
+      - name: Download pinned public model and create ephemeral model key
+        run: python -m scripts.prepare_ci_assets
+      - name: Build and exercise the complete isolated application
+        run: python -m scripts.verify_container --run --keep-image --timeout 1800
+      - name: Publish the exact tested image to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image=$(python -c 'import json; r=json.load(open("reports/container-runtime-verification.json")); assert r["passed"] and r["image_retained"] and r["cleanup_passed"]; print(r["image"])')
+          target="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/paperlens:sha-${GITHUB_SHA}"
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+          docker tag "$image" "$target"
+          docker push "$target"
+          printf '### Tested container image\n\n`%s`\n\nSource commit: `%s`\n' "$target" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload non-secret integration results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: container-integration-results
+          path: reports/container-runtime-verification.json
+          retention-days: 7
+          if-no-files-found: ignore

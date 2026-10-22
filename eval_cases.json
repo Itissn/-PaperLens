@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "created_date": "2026-10-21",
+  "label_policy": "Author-provided papers; agent manually inspected PDF pages to set page+phrase relevance labels before first retrieval run. This is a small development set, not a held-out benchmark. Labels are not exhaustive.",
+  "cases": [
+    {
+      "id": "CL-01",
+      "question": "Which instance scales and generations per scale are used by CL-GPGLS?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2505.15839v1",
+          "page": 3,
+          "contains_any": [
+            "100, 300, 600, 1000",
+            "3 generations",
+            "Instances increase sequence"
+          ]
+        }
+      ],
+      "evidence_note": "CEC preprint Table I and experimental settings on PDF p.3 specify four scales and 3 generations per scale."
+    },
+    {
+      "id": "CL-02",
+      "question": "Which statistical test and significance level were used to compare CL-GPGLS with the baseline methods?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2505.15839v1",
+          "page": 3,
+          "contains_any": [
+            "Wilcoxon rank-sum",
+            "significance level"
+          ]
+        }
+      ],
+      "evidence_note": "CEC preprint p.3 states Wilcoxon rank-sum at 0.05; this differs from the paired tests in BN-GPGLS."
+    },
+    {
+      "id": "DCL-01",
+      "question": "How does DCL-GPGLS update an instance difficulty estimate from population feedback?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 5,
+          "contains_any": [
+            "Online difficulty update",
+            "moving average",
+            "smoothed and regularised"
+          ]
+        }
+      ],
+      "evidence_note": "DCL p.5 section 3.2: population-best gap, moving average and regularisation toward initial difficulty."
+    },
+    {
+      "id": "DCL-02",
+      "question": "Why do the first five warm-up generations not need to cover all 35 training instances in DCL-GPGLS?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 5,
+          "contains_any": [
+            "does not need to cover",
+            "warm-up only",
+            "full-pool initial"
+          ]
+        }
+      ],
+      "evidence_note": "DCL p.5: initial full-pool evaluation supplies every instance's initial difficulty; warm-up reduces dependence on a single initial ranking."
+    },
+    {
+      "id": "DCL-03",
+      "question": "How does DCL-GPGLS reduce repeated selection of the same training instances?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 6,
+          "contains_any": [
+            "selection count",
+            "repeatedly selecting"
+          ]
+        }
+      ],
+      "evidence_note": "DCL p.6 equation (6) includes selection-count downweighting 1/(1+e_i)."
+    },
+    {
+      "id": "DCL-04",
+      "question": "Are DCL and STAT matched in total evaluator calls, and does that imply equal wall-clock time?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 7,
+          "contains_any": [
+            "matched in total evaluator",
+            "wall-clock",
+            "17,500"
+          ]
+        }
+      ],
+      "evidence_note": "DCL p.7 distinguishes 17,500 total evaluator calls from wall-clock equality."
+    },
+    {
+      "id": "BN-01",
+      "question": "What are the six behaviour descriptors used by BN-GPGLS?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 4,
+          "contains_any": [
+            "Evaluation shares and execution rates",
+            "six-dimensional run descriptor"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 5,
+          "contains_any": [
+            "three operator-evaluation shares",
+            "operator-execution"
+          ]
+        }
+      ],
+      "evidence_note": "BN pp.4–5: three operator-evaluation shares and three execution rates; descriptors are not runtime measurements."
+    },
+    {
+      "id": "BN-02",
+      "question": "Is the BN-GPGLS archive accumulated over generations or rebuilt from the current population?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 4,
+          "contains_any": [
+            "reconstructed from the current",
+            "rather than accumulated"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 5,
+          "contains_any": [
+            "Rebuild the current-generation"
+          ]
+        }
+      ],
+      "evidence_note": "BN p.4 framework and p.5 flowchart explicitly reconstruct the archive each generation."
+    },
+    {
+      "id": "BN-03",
+      "question": "Which statistical tests and multiplicity adjustment were applied to final-population tree sizes in BN-GPGLS?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 10,
+          "contains_any": [
+            "paired Wilcoxon signed-rank",
+            "Holm adjustment"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 11,
+          "contains_any": [
+            "paired Wilcoxon",
+            "Holm adjustment"
+          ]
+        }
+      ],
+      "evidence_note": "BN pp.10–11: five two-sided paired Wilcoxon signed-rank comparisons with Holm adjustment across the five comparisons."
+    },
+    {
+      "id": "BN-04",
+      "question": "How many random seeds and monitoring instances are used in BN-GPGLS?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 8,
+          "contains_any": [
+            "30 random seeds",
+            "90 monitoring",
+            "all 90"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 12,
+          "contains_any": [
+            "30 runs on 90",
+            "30 runs and 90"
+          ]
+        }
+      ],
+      "evidence_note": "BN p.8 protocol and p.12 figure explanation specify 30 matched seeds and 90 monitoring instances."
+    },
+    {
+      "id": "BN-05",
+      "question": "What information is excluded by the behaviour descriptor, and is generalisation to larger routing instances tested?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24104v1",
+          "page": 12,
+          "contains_any": [
+            "excludes timing",
+            "remains untested",
+            "Generalisation"
+          ]
+        }
+      ],
+      "evidence_note": "BN p.12 limitations mention excluded timing/order/transitions and untested generalisation."
+    },
+    {
+      "id": "DCL-05",
+      "question": "Does DCL-GPGLS add extra GLS calls inside the evolutionary loop after its full-pool initial evaluation?",
+      "answerable": true,
+      "relevant": [
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 6,
+          "contains_any": [
+            "same GLS results"
+          ]
+        },
+        {
+          "arxiv_id": "2609.24105v1",
+          "page": 7,
+          "contains_any": [
+            "does not add extra GLS calls",
+            "one-off"
+          ]
+        }
+      ],
+      "evidence_note": "DCL pp.6–7 reuse fitness evaluations for feedback; full-pool initial evaluation remains an extra initial cost."
+    },
+    {
+      "id": "OUT-01",
+      "question": "What is the current mortgage interest rate at BNZ?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "No indexed paper contains current banking prices."
+    },
+    {
+      "id": "OUT-02",
+      "question": "How should I cook a chocolate souffle?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "No cooking information in the indexed corpus."
+    },
+    {
+      "id": "OUT-03",
+      "question": "How much did DCL-GPGLS reduce patient waiting times in a New Zealand hospital?",
+      "answerable": false,
+      "relevant": [],
+      "evidence_note": "Hard negative: contains indexed algorithm terms but no health deployment exists in these papers. An evidence-overlap heuristic may fail to abstain."
+    }
+  ]
+}
