@@ -30,7 +30,7 @@ Final source-page reads performed by the controller are labelled separately from
 
 ## Run with Docker Compose
 
-Python 3.12 and a working Linux Docker daemon are required. Runtime models, credentials, user data and local reports are excluded from this repository and image.
+Python 3.12 and a working Linux Docker daemon are required. Downloaded Qwen/embedding/reranker/NLI assets, credentials, user data and local reports are excluded from this repository and app image. RapidOCR includes its packaged OCR models as a dependency.
 
 ```bash
 python -m pip install httpx==0.28.1 pymupdf==1.27.2.3
@@ -55,7 +55,7 @@ python -m pytest tests -q -p no:cacheprovider
 python -m scripts.verify_container --run
 ```
 
-GitHub Actions runs fixture regressions and a real NLI paraphrase/contradiction check, then builds and exercises the Linux Compose stack with real local Qwen inference, OCR and container recreation. A successful main-branch push publishes the **same tested app image** to `ghcr.io/itissn/paperlens:sha-<commit>`; PR runs never publish. See the [workflow](.github/workflows/ci.yml) for actual checks and [Actions](https://github.com/Itissn/-PaperLens/actions) for run results. Configuration alone does not prove a successful run.
+GitHub Actions runs regression tests, including real NLI and OCR checks, then builds and exercises the Linux Compose stack with real local Qwen inference, OCR and container recreation. A successful main-branch push publishes the **same tested app image** to `ghcr.io/itissn/paperlens:sha-<commit>`; PR runs never publish. See the [workflow](.github/workflows/ci.yml) for actual checks and [Actions](https://github.com/Itissn/-PaperLens/actions) for run results. Verified on 22 October 2026: **86 passing Python tests, 15 passing container stages and a publicly pullable GHCR image**. See the [verification snapshot](docs/CI_VERIFICATION.md) for the exact tested commit, run and manifest digest.
 
 Image publication is continuous delivery. GitHub Pages cannot run this Python/model service; an always-on live application requires a separate Docker host, HTTPS and deployment-specific configuration. No cloud host is provisioned by this repository.
 

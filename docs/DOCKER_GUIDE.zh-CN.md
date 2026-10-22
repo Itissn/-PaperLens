@@ -1,5 +1,7 @@
 # PaperLens Docker 使用与学习说明
 
+2026 年 10 月 22 日，GitHub Linux 环境已通过全部 15 项容器验证并发布应用镜像。具体提交、运行链接和摘要见 [验证记录](CI_VERIFICATION.md)。
+
 Docker 路径包含公开资源初始化、非 root 应用、独立模型服务和真实集成验证。当前远端运行结果请看 [GitHub Actions](https://github.com/Itissn/-PaperLens/actions)，持续交付流程见 [CI/CD 学习说明](CI_CD_GUIDE.zh-CN.md)。本机 Docker 是否就绪需要单独检查；远端 Linux runner 的结果不代表本机 Windows 引擎已可用。
 ## 三个服务如何配合
 
