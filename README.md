@@ -34,7 +34,7 @@ python -m pip install "fastapi>=0.115,<1" uvicorn python-multipart pypdf numpy
 python manage.py serve
 ```
 
-1. Open `http://127.0.0.1:8765`. Choose **Lexical · BM25** before importing a text PDF.
+1. Open `http://127.0.0.1:8765`. Choose **Lexical · BM25** before importing a text PDF. Leave OCR off for text PDFs.
 2. Select **Extractive · No LLM** and clear **Rerank evidence**. Ask a question using terms from the paper.
 3. Open a citation to check its source. The app retains imports and their indexes across restarts. Pass `--data-dir PATH` to choose a library.
 

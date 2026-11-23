@@ -10,4 +10,6 @@ Settings: lexical BM25 retrieval; extractive answer; reranking off; top K = 3. T
 
 This demonstrates ingestion-module output, retrieval, the API, the interface and page traceability for one question. It does not test semantic embeddings, OCR, local-LLM generation, general answer correctness or time savings. The two overlapping excerpts visible in the result should not be counted as independent corroboration. The PDF and runtime database are not bundled with the repository; use the source link above.
 
+A repeat run in an isolated Edge browser on 24 November uploaded the same PDF through the reader with OCR off, asked the same question and followed the source URL. The library reported 32 chunks and zero embedded chunks. All three citation links pointed to physical page 1 and the source endpoint returned the PDF.
+
 PDF SHA-256: `9765220b99ed60185873f98627cb50c80436918804fd7f40b1572a4d055c765c`.
