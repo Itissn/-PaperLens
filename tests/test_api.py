@@ -63,12 +63,24 @@ def test_incomplete_index_error_and_repair(tmp_path):
 
 def test_lexical_api_does_not_need_to_load_an_embedding_model(tmp_path):
     from unittest.mock import patch
-    app=create_app(tmp_path)
-    ingest_bytes(app.state.store,make_pdf(),"BM25 only")
-    with patch("paperlens.api.Embedder",side_effect=AssertionError("must not load")):
-        response=TestClient(app).post("/api/search",json={"question":"curriculum learning","mode":"lexical"})
-    assert response.status_code==200
-    assert response.json()["hits"]
+    data = make_pdf()
+    with patch("paperlens.api.Embedder", side_effect=AssertionError("must not load")):
+        with TestClient(create_app(tmp_path)) as client:
+            response = client.post("/api/documents", files={"file": ("paper.pdf", data, "application/pdf")},
+                                   data={"index_vectors": "false"})
+            assert response.status_code == 200, response.text
+            assert response.json()["embedded_chunks"] == 0
+            doc_id = response.json()["document"]["id"]
+        with TestClient(create_app(tmp_path)) as restarted:
+            assert restarted.get("/api/status").json()["embedded_chunks"] == 0
+            result = restarted.post("/api/ask", json={"question": "What is curriculum learning?",
+                                                      "mode": "lexical", "generator": "extractive"}).json()
+            assert result["status"] == "evidence"
+            assert result["citations"][0]["document_id"] == doc_id
+            page = result["citations"][0]["page"]
+            assert page in (1, 2)
+            assert result["citations"][0]["pdf_url"] == f"/api/documents/{doc_id}/pdf#page={page}"
+            assert restarted.get(f"/api/documents/{doc_id}/pdf").content == data
 
 
 def test_optional_reranker_drives_visible_evidence_refusal(tmp_path):

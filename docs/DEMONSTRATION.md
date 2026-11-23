@@ -6,7 +6,7 @@ The isolated library contained one four-page document and 32 text chunks. The ac
 
 Settings: lexical BM25 retrieval; extractive answer; reranking off; top K = 3. The three returned passages came from physical PDF page 1. Each returned passage was checked against the extracted text of that source page. The interface displayed the answer excerpts alongside source links.
 
-![Actual query and source evidence](../assets/paperlens-evidence.png)
+![Actual query and source evidence](paperlens-evidence.png)
 
 This demonstrates ingestion-module output, retrieval, the API, the interface and page traceability for one question. It does not test semantic embeddings, OCR, local-LLM generation, general answer correctness or time savings. The two overlapping excerpts visible in the result should not be counted as independent corroboration. The PDF and runtime database are not bundled with the repository; use the source link above.
 

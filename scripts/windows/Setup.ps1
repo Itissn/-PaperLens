@@ -1,6 +1,6 @@
 ﻿$ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Local-Paths.ps1')
-Push-Location $PSScriptRoot
+Push-Location $root
 try {
     if(-not (Test-Path -LiteralPath $python)){
         $base=Join-Path $machineRoot 'python312\python.exe'
@@ -20,7 +20,7 @@ try {
     }
     Write-Host 'Installing PaperLens dependencies (first run only)...'
     $ErrorActionPreference='Continue'
-    & $python -m pip install --disable-pip-version-check --progress-bar off -r (Join-Path $PSScriptRoot 'requirements.txt')
+    & $python -m pip install --disable-pip-version-check --progress-bar off -r (Join-Path $root 'requirements.txt')
     $commandExit=$LASTEXITCODE
     $ErrorActionPreference='Stop'
     if($commandExit -ne 0){throw 'Dependency installation failed. Check your connection and retry Start.cmd.'}
@@ -30,6 +30,6 @@ try {
     $commandExit=$LASTEXITCODE
     $ErrorActionPreference='Stop'
     if($commandExit -ne 0){throw 'Search model setup failed. Retry when the network is available.'}
-    (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'requirements.txt') -Algorithm SHA256).Hash | Set-Content -LiteralPath (Join-Path $machineRoot 'requirements.sha256')
+    (Get-FileHash -LiteralPath (Join-Path $root 'requirements.txt') -Algorithm SHA256).Hash | Set-Content -LiteralPath (Join-Path $machineRoot 'requirements.sha256')
     Write-Host 'PaperLens search is ready.'
 } finally {Pop-Location}

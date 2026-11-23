@@ -56,7 +56,7 @@
 
 运行自动检查：
 ```powershell
-. .\Local-Paths.ps1
+. .\scripts\windows\Local-Paths.ps1
 & $python -m pytest tests -q
 # Start.cmd 已启动后，执行真正的网页/API/模型联调：
 ```

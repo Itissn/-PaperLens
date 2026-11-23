@@ -1,6 +1,5 @@
 ﻿$ErrorActionPreference='Stop'
-$root=$PSScriptRoot
-. (Join-Path $root 'Local-Paths.ps1')
+. (Join-Path $PSScriptRoot 'Local-Paths.ps1')
 $assets=Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm'
 $exe=Join-Path $assets 'bin\llama-server.exe'
 $model=Join-Path $assets 'qwen2.5-3b-instruct-q4_k_m.gguf'

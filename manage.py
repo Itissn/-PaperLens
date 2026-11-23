@@ -2,6 +2,7 @@
 from paperlens.paths import CACHE
 import argparse
 import json
+import os
 from pathlib import Path
 from paperlens.store import Store
 from paperlens.ingest import ingest_bytes, embed_pending
@@ -12,7 +13,8 @@ ROOT=Path(__file__).resolve().parent
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("command",choices=["index","status","serve","user-add"])
-    parser.add_argument("--data-dir",type=Path,default=ROOT/"data")
+    parser.add_argument("--data-dir",type=Path,default=Path(os.environ.get("PAPERLENS_DATA_DIR", ROOT/"data")))
+    parser.add_argument("--lexical-only",action="store_true",help="Index page text without downloading embeddings")
     parser.add_argument("--chunk-words",type=int,default=120)
     parser.add_argument("--overlap",type=int,default=25)
     parser.add_argument("--username")
@@ -29,7 +31,8 @@ def main():
         print(json.dumps(Auth(Store(args.data_dir),True).create_user(args.username,password,args.role)))
         return
     if args.command=="serve":
-        import uvicorn,os
+        import uvicorn
+        os.environ["PAPERLENS_DATA_DIR"]=str(args.data_dir.resolve())
         if args.auth:os.environ["PAPERLENS_AUTH_REQUIRED"]="1"
         uvicorn.run("paperlens.api:app",host="127.0.0.1",port=8765)
         return
@@ -48,8 +51,9 @@ def main():
             for p in json.loads(manifest.read_text(encoding="utf-8")):
                 result=ingest_bytes(store,(manifest.parent/p["file"]).read_bytes(),p["title"],p["source_url"],p["status"],args.chunk_words,args.overlap)
                 print("Corpus:",p["arxiv_id"],"duplicate" if result["duplicate"] else "imported",flush=True)
-        embedder=Embedder(CACHE/"embeddings")
-        print("Embedded chunks:",embed_pending(store,embedder),flush=True)
+        if not args.lexical_only:
+            embedder=Embedder(CACHE/"embeddings")
+            print("Embedded chunks:",embed_pending(store,embedder),flush=True)
     print(json.dumps(store.documents(),indent=2,ensure_ascii=True))
 
 if __name__=="__main__": main()

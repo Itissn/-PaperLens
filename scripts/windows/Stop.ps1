@@ -1,6 +1,5 @@
 $ErrorActionPreference='Stop'
-$root=$PSScriptRoot
-. (Join-Path $root 'Local-Paths.ps1')
+. (Join-Path $PSScriptRoot 'Local-Paths.ps1')
 $targets=@(
     @{PidFile='reports/server.pid'; Executable=@($python); Marker=(Join-Path $root 'manage.py')},
     @{PidFile='reports/llm.pid'; Executable=(Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm/bin/llama-server.exe'); Marker=(Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm')},

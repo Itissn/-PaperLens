@@ -1,71 +1,48 @@
 # PaperLens
 
-Help a reader ask questions across local research PDFs and inspect the original passages behind the answer.
+PaperLens is a local PDF reader for researchers. Ask a question across papers, read the passages behind the answer and open each citation at its physical PDF page.
 
-## The reading problem and the goal
+## Why build it?
 
-Finding an answer across several papers involves locating a relevant passage and checking its context. An answer without a traceable source adds another verification task. Exact keyword search alone also does not cover every way a reader might phrase a question.
+When two papers discuss the same method, finding a relevant answer is only half the task. A reader still needs to identify which paper made the claim and inspect the surrounding text. PaperLens keeps that trail from question to source page.
 
-PaperLens aims to **bring question answering and source-page inspection into one local reading workflow**. The intended outcome is a verifiable evidence trail: a question leads to retrieved passages, an answer and identifiable physical PDF pages. Faster reading and more accurate answers are benefits to evaluate, rather than established outcomes.
+## How it works
 
-## How the approach addresses the problem
-
-1. **Preserve the source:** PDF extraction creates page-linked text chunks so a retrieved passage can lead back to its physical PDF page.
-2. **Retrieve by terms and meaning:** BM25 handles term matching; local embeddings support semantic matching. Reciprocal-rank fusion combines rankings without treating their different raw scores as interchangeable. Optional reranking refines the candidates.
-3. **Separate retrieval from generation:** extractive mode returns source text without an LLM. Optional local Qwen generation composes an answer from evidence; the agent workflow can use bounded search and page-reading tools.
-4. **Make checking possible:** the FastAPI interface and SQLite storage retain the document/conversation context, while labelled cases and regression tests support inspection of retrieval and source-handling behaviour.
-
-## What has been demonstrated
-
-The local prototype implements the retrieval, answer-mode and source-reference workflow. In the 23 November 2026 review, the API and browser interface started successfully and **42 core tests passed**, covering retrieval scoring, source checks, API behaviour, conversations and other core logic.
-
-![Actual PaperLens extractive query and source-page evidence](assets/paperlens-evidence.png)
-
-*A real query against one public paper, using lexical BM25 retrieval and extractive answers with reranking disabled. Three returned passages were checked against physical PDF page 1; no language model was called. See the [demonstration conditions](docs/DEMONSTRATION.md). This single example is not an accuracy benchmark.*
-
-Evidence: [retrieval implementation](paperlens/retrieval.py), [source checks](paperlens/grounding.py), [tests](tests/) and [evaluation cases and interpretation](evaluation/README.md).
-
-## What still needs evaluation
-
-Those core checks are not a full model-based benchmark. This review did not rerun the complete model/OCR setup, semantic retrieval evaluation or local-LLM generation. The supplied labelled cases are a small development set. A stronger result would report retrieval relevance and citation correctness on held-out questions, plus task time and failures under a stated corpus and configuration.
-
-PaperLens uses pretrained models; it does not train a foundation model. Source checks can fail, and readers still need to inspect the PDF. It is intended for local use.
-
-**Implementation:** Python · FastAPI · SQLite · BM25 · Hybrid retrieval · RAG · Local LLMs
-
-[中文使用说明](README.zh-CN.md) · [Learning guide](docs/LEARNING_GUIDE.zh-CN.md) · [Agent walkthrough](docs/AGENT_GUIDE.zh-CN.md)
-
-## Start on Windows
-
-1. Open `Start.cmd`. First use prepares a separate Python environment and retrieval model, requiring an internet connection.
-2. Open `http://127.0.0.1:8765`, import a PDF and start with **Extractive · No LLM**.
-3. Inspect the cited page for a question whose answer you already know.
-4. Use `Setup-AI.cmd` to prepare optional local generation, then restart.
-5. Use `Stop.cmd` to stop the service.
-
-Environment files and model downloads belong under `%LOCALAPPDATA%\PaperLens`, outside the source directory. Imported PDFs, the index and conversations are local runtime data; they are not included in this repository. CPU generation speed depends on the machine and model.
-
-## Repository guide
-
-| Location | Responsibility |
+| Stage | Implementation |
 |---|---|
-| `paperlens/` | Ingestion, retrieval, generation, source checks, storage and API |
-| `web/` | Browser interface |
-| `scripts/` | Model preparation and sample-document utilities |
-| `tests/` | API, retrieval, grounding and conversation regression checks |
-| `evaluation/` | Labelled retrieval cases |
-| `evaluate.py` | Evaluation entry point |
-| `docs/` | Usage and learning documentation |
-| Root `.cmd` / `.ps1` files | Windows setup and launch entry points |
+| Import | Extract text, retain physical page numbers and store overlapping chunks in SQLite. |
+| Retrieve | BM25 ranks matching terms. Optional embeddings support semantic search. Hybrid mode combines the two rankings using reciprocal-rank fusion. |
+| Answer | Extractive mode returns passages verbatim. Optional local generation uses retrieved evidence and checks source references. |
+| Verify | Open the cited page in the original PDF. Each passage carries its document ID and physical page number. |
 
-## Evaluation
+## Results
 
-With project dependencies and development tools installed:
+On three versioned public papers, BM25 returned a labelled page and topic in its top five passages for **10 of 12 answerable development questions** and **3 of 4 answerable challenge questions**. It abstained on **1 of 3** unanswerable development questions and **0 of 4** challenge questions. This makes source inspection especially important when a question may fall outside the library. An agent prepared the small, domain-specific label sets before evaluation. [Evaluation and reproduction](evaluation/README.md)
+
+![Three retrieved passages traced to the first page of a public paper](docs/paperlens-evidence.png)
+
+The demonstration used one four-page paper, 32 chunks and extractive retrieval. All three passages led back to page 1. [Demonstration details](docs/DEMONSTRATION.md)
+
+All 53 repository tests passed locally, including PDF upload, OCR, retrieval, physical-page citations and the pinned entailment model. The retrieval scores above measure the BM25 path.
+
+## Try the reader
+
+Use a Python 3.11+ environment. The following starts local search for text PDFs.
 
 ```bash
-python -m pip install pytest
-python -m pytest -q tests/test_retrieval.py tests/test_grounding.py tests/test_evaluate.py
-python evaluate.py --labels evaluation/eval_cases.json
+python -m pip install "fastapi>=0.115,<1" uvicorn python-multipart pypdf numpy
+python manage.py serve
 ```
 
-The evaluation command also needs the matching papers indexed and the retrieval/reranking models available. See [evaluation scope](evaluation/README.md) before interpreting its output.
+1. Open `http://127.0.0.1:8765`. Choose **Lexical · BM25** before importing a text PDF.
+2. Select **Extractive · No LLM** and clear **Rerank evidence**. Ask a question using terms from the paper.
+3. Open a citation to check its source. The app retains imports and their indexes across restarts. Pass `--data-dir PATH` to choose a library.
+
+On Windows, **Start.cmd** prepares the full environment for hybrid retrieval. **Setup-AI.cmd** prepares optional local generation. **Stop.cmd** stops the service. These setup paths need internet access on first use. [Windows guide in Chinese](docs/QUICKSTART.zh-CN.md)
+
+## Code and skills
+
+- **Python, FastAPI, SQLite** — [ingestion, local storage and API](paperlens/)
+- **Information retrieval and RAG** — [ranking](paperlens/retrieval.py), [source checks](paperlens/grounding.py) and [labelled evaluation](evaluation/)
+- **Browser interface** — [upload, question and citation views](web/)
+- **Testing and operations** — [regression tests](tests/), [automation and Windows launchers](scripts/) and [learning guide](docs/LEARNING_GUIDE.zh-CN.md)

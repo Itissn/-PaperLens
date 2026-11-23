@@ -5,7 +5,7 @@
 ## 开始使用
 
 1. 双击 `Start.cmd`。首次运行会准备独立 Python 环境和检索模型，需要联网；以后直接启动。
-2. 浏览器打开 http://127.0.0.1:8765 。点击 **Import PDF** 导入论文，或使用已导入的三篇公开示例论文。
+2. 浏览器打开 http://127.0.0.1:8765 。点击 **Import PDF** 导入论文，或按评估说明下载公开示例论文。
 3. 默认 **RAG · Direct retrieval / Extractive · No LLM** 是原文摘答。先问一个自己知道答案的问题，再点击引用页码核对。
 4. **Local Qwen · RAG** 使用本地模型组织回答；**Agent · Tool calling** 允许模型调用搜索和读页工具。本地 CPU 生成可能较慢。
 5. 新电脑需要 AI 模型时，双击 `Setup-AI.cmd`。下载和校验完成后重新启动。无需付费 API 密钥。
@@ -27,10 +27,8 @@
 ## 本机文件位置
 
 Python、依赖、模型及本地推理凭据放在 `%LOCALAPPDATA%\PaperLens`，不放进 OneDrive。
-本次精简前的完整备份保存在该目录的 `backups` 子目录。
-源码的 `.git` 历史保留；删除的是当前目录中的 Docker/CI 配置、重复说明和一次性开发验证脚本。
 
 只监听本机地址；这不是公开网站。答案和来源检查都可能有误，请核对论文。
 项目使用预训练模型，是 AI 辅助的个人工程与学习项目，不是从头训练大语言模型。
 
-深入阅读：[中文学习教程](docs/LEARNING_GUIDE.zh-CN.md) · [Agent 教程](docs/AGENT_GUIDE.zh-CN.md)
+深入阅读：[中文学习教程](LEARNING_GUIDE.zh-CN.md) · [Agent 教程](AGENT_GUIDE.zh-CN.md)

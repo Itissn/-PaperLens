@@ -153,7 +153,7 @@ JSON schema 限制字段和允许引用的编号；后端再次检查引用是�
 在 PowerShell 中进入项目：
 
 ```powershell
-. .\Local-Paths.ps1
+. .\scripts\windows\Local-Paths.ps1
 cd <your-project-directory>
 & $python manage.py status
 & $python evaluate.py
@@ -173,7 +173,7 @@ cd <your-project-directory>
 新建实验数据库，保留默认索引：
 
 ```powershell
-. .\Local-Paths.ps1
+. .\scripts\windows\Local-Paths.ps1
 & $python manage.py index --data-dir .cache/experiments/chunk180 --chunk-words 180 --overlap 40
 & $python evaluate.py --data-dir .cache/experiments/chunk180 --report reports/experiment-chunk180.json
 ```
@@ -211,7 +211,7 @@ cd <your-project-directory>
 | GET /api/evaluation | 读取固定评测报告 |
 
 ```powershell
-. .\Local-Paths.ps1
+. .\scripts\windows\Local-Paths.ps1
 & $python -m pytest tests -q
 ```
 

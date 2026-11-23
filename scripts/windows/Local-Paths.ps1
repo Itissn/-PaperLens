@@ -1,4 +1,5 @@
-﻿$machineRoot=Join-Path $env:LOCALAPPDATA 'PaperLens'
+﻿$root=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$machineRoot=Join-Path $env:LOCALAPPDATA 'PaperLens'
 $python=Join-Path $machineRoot 'venv312\Scripts\python.exe'
 $env:PAPERLENS_CACHE_DIR=Join-Path $machineRoot 'models'
 $env:HF_HOME=Join-Path $env:PAPERLENS_CACHE_DIR 'huggingface'

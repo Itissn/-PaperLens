@@ -2,7 +2,7 @@
 . (Join-Path $PSScriptRoot 'Local-Paths.ps1')
 if(-not (Test-Path -LiteralPath $python)){& (Join-Path $PSScriptRoot 'Setup.ps1')}
 & (Join-Path $PSScriptRoot 'Stop.ps1')
-Push-Location $PSScriptRoot
+Push-Location $root
 try {
     foreach($module in @('scripts.setup_local_llm','scripts.setup_nli','scripts.setup_reranker')){
         $ErrorActionPreference='Continue'

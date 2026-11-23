@@ -1,14 +1,13 @@
 param([switch]$NoBrowser)
 $ErrorActionPreference='Stop'
-$root=$PSScriptRoot
-. (Join-Path $root 'Local-Paths.ps1')
+. (Join-Path $PSScriptRoot 'Local-Paths.ps1')
 $stamp=Join-Path $machineRoot 'requirements.sha256'
 $expected=(Get-FileHash -LiteralPath (Join-Path $root 'requirements.txt') -Algorithm SHA256).Hash
 if(-not (Test-Path -LiteralPath $python) -or -not (Test-Path -LiteralPath $stamp) -or (Get-Content -LiteralPath $stamp -Raw).Trim() -ne $expected){
-    & (Join-Path $root 'Setup.ps1')
+    & (Join-Path $PSScriptRoot 'Setup.ps1')
 }
 if(Test-Path -LiteralPath (Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm/provenance.json')){
-    & (Join-Path $root 'Start-Local-LLM.ps1')
+    & (Join-Path $PSScriptRoot 'Start-Local-LLM.ps1')
 }
 try {$existing=Invoke-RestMethod 'http://127.0.0.1:8765/api/health' -TimeoutSec 2} catch {$existing=$null}
 if($existing){

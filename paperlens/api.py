@@ -40,7 +40,7 @@ def create_app(data_dir=None,embedder=None,reranker=None,auth_required=None):
     app=FastAPI(title="PaperLens",version="0.3.0",description="Local paper research, source checks and bounded tool calling.")
     hosts=[x.strip() for x in os.environ.get("PAPERLENS_ALLOWED_HOSTS","127.0.0.1,localhost,testserver").split(",") if x.strip()]
     app.add_middleware(TrustedHostMiddleware,allowed_hosts=hosts)
-    store=Store(Path(data_dir) if data_dir else ROOT/"data")
+    store=Store(Path(data_dir or os.environ.get("PAPERLENS_DATA_DIR") or ROOT/"data"))
     history=History(store)
     auth=Auth(store,os.environ.get("PAPERLENS_AUTH_REQUIRED")=="1" if auth_required is None else auth_required)
     lock=threading.RLock();metrics_lock=threading.Lock();capacity=threading.BoundedSemaphore(2)
@@ -146,12 +146,14 @@ def create_app(data_dir=None,embedder=None,reranker=None,auth_required=None):
             return Response(data,media_type="image/png")
         except ValueError as exc:raise HTTPException(400,str(exc))
     @app.post("/api/documents")
-    def upload(request:Request,file:UploadFile,ocr:bool=Form(False)):
+    def upload(request:Request,file:UploadFile,ocr:bool=Form(False),index_vectors:bool=Form(True)):
         admin(request)
         data=file.file.read(MAX_BYTES+1);title=Path((file.filename or "Uploaded paper").replace("\\","/")).stem[:300]
         with lock:
             try:doc=ingest_bytes(store,data,title,ocr=ocr)
             except ValueError as exc:raise HTTPException(400,str(exc))
+            if not index_vectors:
+                return {"document":doc,"embedded_chunks":0}
             try:count=embed_pending(store,engine())
             except Exception:raise HTTPException(503,"PDF saved; embeddings are not ready. Fix model setup then repair the index.")
         return {"document":doc,"embedded_chunks":count}

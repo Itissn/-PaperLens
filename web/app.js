@@ -166,11 +166,12 @@ $("compare").onclick=async()=>{
 $("pdf-upload").onchange=async()=>{
  const file=$("pdf-upload").files[0];if(!file)return;
  clearAlert();if(file.size>20*1024*1024){showAlert("PDF files must be 20 MB or smaller.");return;}
- $("pdf-upload").disabled=true;showAlert("Extracting PDF text and building embeddings…");
+ $("pdf-upload").disabled=true;const vectorIndex = $("mode").value !== "lexical";
+ showAlert(vectorIndex ? "Extracting PDF text and building embeddings…" : "Extracting page text for BM25 search…");
  try{
-   const form=new FormData();form.append("file",file);form.append("ocr",String($("upload-ocr").checked));
+   const form=new FormData();form.append("file",file);form.append("index_vectors",String(vectorIndex));form.append("ocr",String($("upload-ocr").checked));
    const r=await api("/api/documents",{method:"POST",body:form});
-   showAlert(r.document.duplicate?"This PDF already exists. The index was checked; no duplicate was added.":"Paper imported. Embeddings created: "+r.embedded_chunks+".");await refresh();
+   showAlert((r.document.duplicate ? "Paper already in library. " : "Paper imported. ") + (vectorIndex ? "Embeddings created: "+r.embedded_chunks+"." : "Ready for keyword search."));await refresh();
  }catch(e){showAlert(e.message);await refresh();}finally{$("pdf-upload").disabled=false;$("pdf-upload").value="";}
 };
 $("reindex").onclick=async()=>{

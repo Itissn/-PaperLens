@@ -7,6 +7,7 @@ import platform
 import statistics
 import time
 from pathlib import Path
+from scripts.download_corpus import CORPUS
 from paperlens.store import Store
 from paperlens.embeddings import Embedder
 from paperlens.retrieval import Retriever
@@ -36,24 +37,30 @@ def main():
     parser.add_argument("--data-dir",type=Path,default=ROOT/"data")
     parser.add_argument("--labels",type=Path,default=ROOT/"evaluation"/"eval_cases.json")
     parser.add_argument("--report",type=Path,default=ROOT/"reports"/"retrieval-evaluation.json")
+    parser.add_argument("--lexical-only",action="store_true",help="Evaluate BM25 without embedding or reranking models")
     args=parser.parse_args()
     label_path=args.labels
     labels=json.loads(label_path.read_text(encoding="utf-8"))
     store=Store(args.data_dir)
     # Ignore later personal uploads: this benchmark has a fixed corpus.
-    documents=[d for d in store.documents() if d["source_url"].startswith("https://arxiv.org/abs/")]
+    expected={"https://arxiv.org/abs/"+p["arxiv_id"] for p in CORPUS}
+    documents=[d for d in store.documents() if d["source_url"] in expected]
+    if {d["source_url"] for d in documents} != expected or len(documents) != len(expected):
+        parser.error("Index exactly one copy of each versioned benchmark paper before evaluation.")
     lookup={d["id"]:d["source_url"].split("/")[-1] for d in documents}
     start=time.perf_counter()
-    embedder=Embedder(CACHE/"embeddings")
+    embedder=None if args.lexical_only else Embedder(CACHE/"embeddings")
     model_load=(time.perf_counter()-start)*1000
     # Fixed, pre-registered corpus: store wrapper filters non-benchmark docs.
     class FixedCorpus:
         def chunks(self,document_id=None):
             return [r for r in store.chunks(document_id) if r["document_id"] in lookup]
-    reranker=Reranker(CACHE/"reranker")
+    reranker=None if args.lexical_only else Reranker(CACHE/"reranker")
     retriever=Retriever(FixedCorpus(),embedder,reranker)
     variants=[("lexical","lexical",False),("semantic","semantic",False),("hybrid","hybrid",False),("hybrid_rerank","hybrid",True)]
-    retriever.search("warm up query",mode="semantic",k=5)
+    if args.lexical_only:
+        variants=variants[:1]
+    retriever.search("warm up query",mode=variants[-1][1],k=5)
     results=[]
     k=5
     for c in labels["cases"]:
@@ -80,14 +87,13 @@ def main():
              "median_latency_ms":statistics.median(c["results"][mode]["latency_ms"] for c in results),
              "unanswerable_abstention_rate":statistics.mean(r["abstained"] for r in negative),
              "exact_quote_integrity":all(c["results"][mode]["exact_quote_integrity"] for c in results)}
-    report={"created_date":labels["created_date"],"project_version":"0.3.0","reranker":reranker.name,"reranker_cutoff":RELEVANCE_CUTOFF,"k":k,"answerable_cases":sum(c["answerable"] for c in results),
+    report={"created_date":labels["created_date"],"project_version":"0.3.0","reranker":reranker.name if reranker else None,"reranker_cutoff":RELEVANCE_CUTOFF,"k":k,"answerable_cases":sum(c["answerable"] for c in results),
        "unanswerable_cases":sum(not c["answerable"] for c in results),"label_policy":labels["label_policy"],
        "limitations":"Small manually constructed development set; relevance labels are not exhaustive. No held-out or human-rated LLM answer accuracy measured. Timings are one local warm run; retrieval includes query embedding but excludes model loading. Quote integrity only checks exact excerpts. Answerability policies are heuristics. Positive evidence coverage is reported alongside negative refusals; exact quotes do not establish answer correctness.",
-       "environment":{"python":platform.python_version(),"platform":platform.platform(),"model":embedder.name,
+       "environment":{"python":platform.python_version(),"platform":platform.platform(),"model":embedder.name if embedder else None,
                       "model_load_ms":round(model_load,2),"index_config":json.loads((store.folder/"index-config.json").read_text()) if (store.folder/"index-config.json").exists() else {"chunk_words":120,"overlap_words":25},"corpus_sha256":{d["source_url"]:d["sha256"] for d in documents},
                       "labels_sha256":hashlib.sha256(label_path.read_bytes()).hexdigest()},
        "summary":summary,"cases":results}
-    out=ROOT/"reports";out.mkdir(exist_ok=True)
     args.report.parent.mkdir(parents=True,exist_ok=True)
     args.report.write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding="utf-8")
     print(json.dumps(summary,indent=2))

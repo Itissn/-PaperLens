@@ -76,4 +76,4 @@ def generate(query,hits,ranker=None,emit=None,feedback=None):
         return paragraphs,{"input_tokens":usage.get("prompt_tokens"),"output_tokens":usage.get("completion_tokens")},model_label()
     except GenerationError:raise
     except Exception as exc:
-        raise GenerationError("Local Qwen unavailable, timed out, or returned invalid JSON. Run Start-Local-LLM.ps1.") from exc
+        raise GenerationError("Local Qwen unavailable, timed out, or returned invalid JSON. Restart PaperLens using Start.cmd.") from exc
