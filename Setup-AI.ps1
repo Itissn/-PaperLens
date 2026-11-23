@@ -13,5 +13,3 @@ try {
     }
 } finally {Pop-Location}
 Write-Host 'Local Qwen and evidence checks are ready. Run Start.cmd.'
-
-

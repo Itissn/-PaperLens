@@ -33,4 +33,3 @@ try {
     (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'requirements.txt') -Algorithm SHA256).Hash | Set-Content -LiteralPath (Join-Path $machineRoot 'requirements.sha256')
     Write-Host 'PaperLens search is ready.'
 } finally {Pop-Location}
-
