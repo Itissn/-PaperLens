@@ -1,4 +1,4 @@
-# PaperLens Agent：运行、原理与学习练习
+﻿# PaperLens Agent：运行、原理与学习练习
 
 ## 运行
 双击项目目录的 Start.cmd，打开 http://127.0.0.1:8765 。将“Workflow”选为“Agent · Tool calling”，保留“Local Qwen · RAG”回答方式。试问：
@@ -56,13 +56,13 @@
 
 运行自动检查：
 ```powershell
-.\.runtime\python.exe -m pytest tests -q
-.\.runtime\python.exe scripts/agent_smoke.py
+. .\Local-Paths.ps1
+& $python -m pytest tests -q
 # Start.cmd 已启动后，执行真正的网页/API/模型联调：
-.\.runtime\python.exe scripts/agent_api_smoke.py
 ```
 
-工具行为测试中的假模型用于验证控制逻辑；后两个脚本调用真实本地模型，不能相互替代。项目由 AI 辅助实现，能亲自解释、修改并重跑后，再将自己验证的部分用于面试。
+工具行为测试中的假模型用于验证控制逻辑；真实模型联调请在启动网页后选择 Agent，并检查工具轨迹和来源，两者不能相互替代。项目由 AI 辅助实现，能亲自解释、修改并重跑后，再将自己验证的部分用于面试。
 
 
-v0.3 更新：现在会对未读的最终引用页进行单独标明的 controller 补读，不把它混入模型选择的工具轨迹。新加入流式草稿、历史会话、NLI 和列表完整性筛查；它们仍不能保证答案正确。详见 [v0.3 教程](V03_GUIDE.zh-CN.md)。
+v0.3 更新：现在会对未读的最终引用页进行单独标明的 controller 补读，不把它混入模型选择的工具轨迹。新加入流式草稿、历史会话、NLI 和列表完整性筛查；它们仍不能保证答案正确。详见 [本机使用说明](LOCAL_DEPLOYMENT.zh-CN.md)。
+

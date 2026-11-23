@@ -1,72 +1,71 @@
 # PaperLens
 
-[![CI](https://github.com/Itissn/-PaperLens/actions/workflows/ci.yml/badge.svg)](https://github.com/Itissn/-PaperLens/actions/workflows/ci.yml)
+Help a reader ask questions across local research PDFs and inspect the original passages behind the answer.
 
-An inspectable research-paper assistant built with Python, FastAPI and local Qwen inference. It combines hybrid retrieval, source-grounded answers and bounded Agent tool calling. English application, with Chinese learning guides.
+## The reading problem and the goal
 
-## What it does
+Finding an answer across several papers involves locating a relevant passage and checking its context. An answer without a traceable source adds another verification task. Exact keyword search alone also does not cover every way a reader might phrase a question.
 
-- Ingest PDFs with physical-page citations; extract text, image-page OCR, tables and supported formula source regions.
-- Compare BM25, neural retrieval and reciprocal-rank fusion, with optional cross-encoder reranking.
-- Run a local Qwen Agent that can list/search papers and read source pages within a bounded tool budget.
-- Stream model drafts and progress, support cancellation, and check source quotations/numbers and learned textual entailment before showing a verified answer.
-- Persist conversations and contextual follow-ups in SQLite, with optional admin/viewer login and owner isolation.
-- Expose health, strict deployment readiness and process-local metrics.
+PaperLens aims to **bring question answering and source-page inspection into one local reading workflow**. The intended outcome is a verifiable evidence trail: a question leads to retrieved passages, an answer and identifiable physical PDF pages. Faster reading and more accurate answers are benefits to evaluate, rather than established outcomes.
 
-## Architecture
+## How the approach addresses the problem
 
-```text
-English web UI -> FastAPI -> bounded Agent / direct retrieval
-                             | tools: list, search, read page
-                             v
-                 SQLite + BM25 + BGE vectors + cross-encoder
-                             |
-                      local Qwen / llama.cpp
-                             |
-                 source checks + ONNX NLI -> cited response
-```
+1. **Preserve the source:** PDF extraction creates page-linked text chunks so a retrieved passage can lead back to its physical PDF page.
+2. **Retrieve by terms and meaning:** BM25 handles term matching; local embeddings support semantic matching. Reciprocal-rank fusion combines rankings without treating their different raw scores as interchangeable. Optional reranking refines the candidates.
+3. **Separate retrieval from generation:** extractive mode returns source text without an LLM. Optional local Qwen generation composes an answer from evidence; the agent workflow can use bounded search and page-reading tools.
+4. **Make checking possible:** the FastAPI interface and SQLite storage retain the document/conversation context, while labelled cases and regression tests support inspection of retrieval and source-handling behaviour.
 
-Final source-page reads performed by the controller are labelled separately from model-selected tool actions. Answers can still be incomplete, wrong or conservatively withheld; a passed smoke check is not a general accuracy claim.
+## What has been demonstrated
 
-## Run on the configured Windows computer
+The local prototype implements the retrieval, answer-mode and source-reference workflow. In the 23 November 2026 review, the API and browser interface started successfully and **42 core tests passed**, covering retrieval scoring, source checks, API behaviour, conversations and other core logic.
 
-Double-click `Start.cmd`, then open **http://127.0.0.1:8765**. This native path reuses the installed Python runtime and local models; it does not require Docker, WSL or a Windows restart. It listens only on loopback and is a personal, no-login configuration. It is available while the computer and project processes are running. For start/stop commands, data locations and backup limits, see the [local deployment guide](docs/LOCAL_DEPLOYMENT.zh-CN.md).
+![Actual PaperLens extractive query and source-page evidence](assets/paperlens-evidence.png)
 
-## Run with Docker Compose
+*A real query against one public paper, using lexical BM25 retrieval and extractive answers with reranking disabled. Three returned passages were checked against physical PDF page 1; no language model was called. See the [demonstration conditions](docs/DEMONSTRATION.md). This single example is not an accuracy benchmark.*
 
-Python 3.12 and a working Linux Docker daemon are required. Downloaded Qwen/embedding/reranker/NLI assets, credentials, user data and local reports are excluded from this repository and app image. RapidOCR includes its packaged OCR models as a dependency.
+Evidence: [retrieval implementation](paperlens/retrieval.py), [source checks](paperlens/grounding.py), [tests](tests/) and [evaluation cases and interpretation](evaluation/README.md).
+
+## What still needs evaluation
+
+Those core checks are not a full model-based benchmark. This review did not rerun the complete model/OCR setup, semantic retrieval evaluation or local-LLM generation. The supplied labelled cases are a small development set. A stronger result would report retrieval relevance and citation correctness on held-out questions, plus task time and failures under a stated corpus and configuration.
+
+PaperLens uses pretrained models; it does not train a foundation model. Source checks can fail, and readers still need to inspect the PDF. It is intended for local use.
+
+**Implementation:** Python · FastAPI · SQLite · BM25 · Hybrid retrieval · RAG · Local LLMs
+
+[中文使用说明](README.zh-CN.md) · [Learning guide](docs/LEARNING_GUIDE.zh-CN.md) · [Agent walkthrough](docs/AGENT_GUIDE.zh-CN.md)
+
+## Start on Windows
+
+1. Open `Start.cmd`. First use prepares a separate Python environment and retrieval model, requiring an internet connection.
+2. Open `http://127.0.0.1:8765`, import a PDF and start with **Extractive · No LLM**.
+3. Inspect the cited page for a question whose answer you already know.
+4. Use `Setup-AI.cmd` to prepare optional local generation, then restart.
+5. Use `Stop.cmd` to stop the service.
+
+Environment files and model downloads belong under `%LOCALAPPDATA%\PaperLens`, outside the source directory. Imported PDFs, the index and conversations are local runtime data; they are not included in this repository. CPU generation speed depends on the machine and model.
+
+## Repository guide
+
+| Location | Responsibility |
+|---|---|
+| `paperlens/` | Ingestion, retrieval, generation, source checks, storage and API |
+| `web/` | Browser interface |
+| `scripts/` | Model preparation and sample-document utilities |
+| `tests/` | API, retrieval, grounding and conversation regression checks |
+| `evaluation/` | Labelled retrieval cases |
+| `evaluate.py` | Evaluation entry point |
+| `docs/` | Usage and learning documentation |
+| Root `.cmd` / `.ps1` files | Windows setup and launch entry points |
+
+## Evaluation
+
+With project dependencies and development tools installed:
 
 ```bash
-python -m pip install httpx==0.28.1 pymupdf==1.27.2.3
-python -m scripts.prepare_ci_assets
-python -m scripts.container_preflight
-docker compose build paperlens
-docker compose run --rm --no-deps paperlens python manage.py user-add --username admin --role admin
-docker compose run --rm --no-deps bootstrap
-docker compose up -d paperlens
+python -m pip install pytest
+python -m pytest -q tests/test_retrieval.py tests/test_grounding.py tests/test_evaluate.py
+python evaluate.py --labels evaluation/eval_cases.json
 ```
 
-The administrator password is requested privately by the CLI. Open **http://127.0.0.1:8767**. Initial setup downloads the pinned public corpus and local inference assets; later app startup uses the persisted volumes. The model endpoint is internal to Compose. See [Docker guide](docs/DOCKER_GUIDE.zh-CN.md).
-
-## Tests and continuous delivery
-
-```bash
-python -m pip install -r requirements-ci.txt
-python -m scripts.setup_nli
-python -m pytest tests -q -p no:cacheprovider
-# Opt-in: builds a separate image, runs real inference/OCR/auth/persistence,
-# and removes only its uniquely named test containers and volumes.
-python -m scripts.verify_container --run
-```
-
-GitHub Actions runs regression tests, including real NLI and OCR checks, then builds and exercises the Linux Compose stack with real local Qwen inference, OCR and container recreation. A successful main-branch push publishes the **same tested app image** to `ghcr.io/itissn/paperlens:sha-<commit>`; PR runs never publish. See the [workflow](.github/workflows/ci.yml) for actual checks and [Actions](https://github.com/Itissn/-PaperLens/actions) for run results. Verified on 22 October 2026: **86 passing Python tests, 15 passing container stages and a publicly pullable GHCR image**. See the [verification snapshot](docs/CI_VERIFICATION.md) for the exact tested commit, run and manifest digest.
-
-Image publication is continuous delivery. GitHub Pages cannot run this Python/model service; an always-on live application requires a separate Docker host, HTTPS and deployment-specific configuration. No cloud host is provisioned by this repository.
-
-## Learning and scope
-
-- [Learning guide](docs/LEARNING_GUIDE.zh-CN.md)
-- [Agent guide](docs/AGENT_GUIDE.zh-CN.md)
-- [CI/CD guide](docs/CI_CD_GUIDE.zh-CN.md)
-
-Built as an AI-assisted personal engineering and learning project. The baseline corpus contains three public research papers; no private recruitment documents or correspondence are included. The pinned Qwen2.5-3B model uses the upstream **qwen-research** license; model weights are downloaded separately, not included in the app image. Upstream asset licenses remain applicable.
+The evaluation command also needs the matching papers indexed and the retrieval/reranking models available. See [evaluation scope](evaluation/README.md) before interpreting its output.

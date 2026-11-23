@@ -1,10 +1,12 @@
-fastapi>=0.115,<1
-uvicorn>=0.34,<1
-python-multipart>=0.0.20,<1
-pypdf>=5,<7
-fastembed>=0.7,<1
-httpx>=0.28,<1
-truststore>=0.10,<1
-
-pymupdf>=1.26,<1.28
-rapidocr-onnxruntime>=1.4,<2
+# Versions verified on this Windows Python 3.12 installation.
+fastapi==0.163.0
+uvicorn==0.54.0
+python-multipart==0.0.33
+pypdf==6.21.4
+fastembed==0.9.1
+httpx==0.28.1
+truststore==0.10.5
+pymupdf==1.27.2.3
+rapidocr-onnxruntime==1.4.4
+onnxruntime==1.32.0
+numpy==2.5.4

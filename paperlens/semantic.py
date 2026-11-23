@@ -1,4 +1,5 @@
 """Local learned entailment check; a fallible screening model, not a truth oracle."""
+from .paths import CACHE
 import json,re,threading
 from pathlib import Path
 import numpy as np
@@ -38,5 +39,5 @@ _LOCK=threading.Lock()
 def default_verifier():
     global _INSTANCE
     with _LOCK:
-        if _INSTANCE is None:_INSTANCE=SemanticVerifier(Path(__file__).resolve().parents[1]/".cache"/"nli")
+        if _INSTANCE is None:_INSTANCE=SemanticVerifier(CACHE/"nli")
     return _INSTANCE

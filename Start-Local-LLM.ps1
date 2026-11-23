@@ -1,8 +1,9 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $root=$PSScriptRoot
-$assets=Join-Path $root '.cache\local-llm'
+. (Join-Path $root 'Local-Paths.ps1')
+$assets=Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm'
 $exe=Join-Path $assets 'bin\llama-server.exe'
-$model=Join-Path $assets 'qwen2.5-1.5b-instruct-q4_k_m.gguf'
+$model=Join-Path $assets 'qwen2.5-3b-instruct-q4_k_m.gguf'
 $selection=Join-Path $assets 'active-model.json'
 if(Test-Path -LiteralPath $selection){
     $selected=Get-Content -LiteralPath $selection -Raw | ConvertFrom-Json
@@ -26,7 +27,7 @@ $arguments=@('--api-key-file',('"' + $keyFile + '"'),'--cors-origins','http://12
 $llm=Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput (Join-Path $root 'reports/llm.log') -RedirectStandardError (Join-Path $root 'reports/llm-error.log') -PassThru
 [IO.File]::WriteAllText((Join-Path $root 'reports/llm.pid'),[string]$llm.Id)
 $ready=$false
-for($attempt=0;$attempt -lt 50;$attempt++){
+for($attempt=0;$attempt -lt 150;$attempt++){
     Start-Sleep -Milliseconds 400
     try{$health=Invoke-RestMethod 'http://127.0.0.1:8766/health' -TimeoutSec 2;if($health.status -eq 'ok'){$ready=$true;break}}catch{}
     if($llm.HasExited){break}

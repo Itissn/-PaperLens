@@ -1,4 +1,5 @@
 """Local llama.cpp transport with source-sentence selection and bounded context."""
+from .paths import CACHE
 import json
 from pathlib import Path
 import urllib.request
@@ -10,9 +11,9 @@ MODEL_ALIAS="paperlens-qwen"
 def model_label():
     import os
     if os.environ.get("PAPERLENS_MODEL_LABEL"):return os.environ["PAPERLENS_MODEL_LABEL"][:160]
-    selected=Path(__file__).resolve().parents[1]/".cache"/"local-llm"/"active-model.json"
+    selected=CACHE/"local-llm"/"active-model.json"
     if selected.exists():return json.loads(selected.read_text(encoding="utf-8"))["label"]
-    return "Qwen2.5-1.5B-Instruct Q4_K_M (llama.cpp)"
+    return "Qwen2.5-3B-Instruct Q4_K_M (llama.cpp)"
 
 SYSTEM_PROMPT=(
     "Answer the exact research question from the supplied source sentences. If a Follow-up is present, answer that current question using the preceding text only as reference context. "

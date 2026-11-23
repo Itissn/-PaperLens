@@ -1,4 +1,5 @@
 """Reproducible retrieval evaluation. No LLM or paid API calls."""
+from paperlens.paths import CACHE
 import argparse
 import hashlib
 import json
@@ -33,7 +34,7 @@ def score_hits(hits,relevant,id_to_arxiv):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--data-dir",type=Path,default=ROOT/"data")
-    parser.add_argument("--labels",type=Path,default=ROOT/"eval_cases.json")
+    parser.add_argument("--labels",type=Path,default=ROOT/"evaluation"/"eval_cases.json")
     parser.add_argument("--report",type=Path,default=ROOT/"reports"/"retrieval-evaluation.json")
     args=parser.parse_args()
     label_path=args.labels
@@ -43,13 +44,13 @@ def main():
     documents=[d for d in store.documents() if d["source_url"].startswith("https://arxiv.org/abs/")]
     lookup={d["id"]:d["source_url"].split("/")[-1] for d in documents}
     start=time.perf_counter()
-    embedder=Embedder(ROOT/".cache"/"embeddings")
+    embedder=Embedder(CACHE/"embeddings")
     model_load=(time.perf_counter()-start)*1000
     # Fixed, pre-registered corpus: store wrapper filters non-benchmark docs.
     class FixedCorpus:
         def chunks(self,document_id=None):
             return [r for r in store.chunks(document_id) if r["document_id"] in lookup]
-    reranker=Reranker(ROOT/".cache"/"reranker")
+    reranker=Reranker(CACHE/"reranker")
     retriever=Retriever(FixedCorpus(),embedder,reranker)
     variants=[("lexical","lexical",False),("semantic","semantic",False),("hybrid","hybrid",False),("hybrid_rerank","hybrid",True)]
     retriever.search("warm up query",mode="semantic",k=5)

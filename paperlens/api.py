@@ -1,4 +1,5 @@
 """Local API: validated retrieval, persisted conversations, streaming and optional accounts."""
+from .paths import CACHE
 import asyncio,json,os,queue,threading,time
 from pathlib import Path
 from typing import Literal
@@ -47,10 +48,10 @@ def create_app(data_dir=None,embedder=None,reranker=None,auth_required=None):
     state={"embedder":embedder,"reranker":reranker}
     app.state.store=store;app.state.auth=auth;app.state.history=history
     def engine():
-        if state["embedder"] is None:state["embedder"]=Embedder(ROOT/".cache"/"embeddings")
+        if state["embedder"] is None:state["embedder"]=Embedder(CACHE/"embeddings")
         return state["embedder"]
     def ranking_engine():
-        if state["reranker"] is None:state["reranker"]=Reranker(ROOT/".cache"/"reranker")
+        if state["reranker"] is None:state["reranker"]=Reranker(CACHE/"reranker")
         return state["reranker"]
     def identity(request):return request.state.identity
     def admin(request):
@@ -102,7 +103,7 @@ def create_app(data_dir=None,embedder=None,reranker=None,auth_required=None):
             return JSONResponse(status_code=200 if result["ready"] else 503,content=result)
         try:
             with store.connect() as con:con.execute("SELECT 1").fetchone()
-            return {"ready":True,"database":"ok","semantic_model_available":(ROOT/".cache/nli/provenance.json").exists()}
+            return {"ready":True,"database":"ok","semantic_model_available":(CACHE/"nli/provenance.json").exists()}
         except Exception:return JSONResponse(status_code=503,content={"ready":False,"database":"unavailable"})
     @app.get("/api/metrics")
     def runtime_metrics(request:Request):
@@ -111,7 +112,7 @@ def create_app(data_dir=None,embedder=None,reranker=None,auth_required=None):
     @app.get("/api/status")
     def status():
         docs=store.documents()
-        return {"documents":len(docs),"chunks":sum(d["chunks"] for d in docs),"embedded_chunks":sum(d["embedded_chunks"] for d in docs),"embedding_model":MODEL,"generator_default":"extractive","version":"0.3.0","reranker_model":RERANK_MODEL,"reranker_cutoff":RELEVANCE_CUTOFF,"ollama_configured":bool(os.environ.get("PAPERLENS_OLLAMA_MODEL")),"local_llm_configured":bool(os.environ.get("PAPERLENS_LLM_BASE_URL")) or (ROOT/".cache/local-llm/provenance.json").exists(),"semantic_model_available":(ROOT/".cache/nli/provenance.json").exists(),"language_note":"English model/corpus; cross-language retrieval is not evaluated.","authentication_required":auth.required}
+        return {"documents":len(docs),"chunks":sum(d["chunks"] for d in docs),"embedded_chunks":sum(d["embedded_chunks"] for d in docs),"embedding_model":MODEL,"generator_default":"extractive","version":"0.3.0","reranker_model":RERANK_MODEL,"reranker_cutoff":RELEVANCE_CUTOFF,"ollama_configured":bool(os.environ.get("PAPERLENS_OLLAMA_MODEL")),"local_llm_configured":bool(os.environ.get("PAPERLENS_LLM_BASE_URL")) or (CACHE/"local-llm/provenance.json").exists(),"semantic_model_available":(CACHE/"nli/provenance.json").exists(),"language_note":"English model/corpus; cross-language retrieval is not evaluated.","authentication_required":auth.required}
     @app.get("/api/documents")
     def documents():return store.documents()
     def existing(doc_id):

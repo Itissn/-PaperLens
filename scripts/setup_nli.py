@@ -1,4 +1,5 @@
 """Download a pinned official ONNX NLI model with checked ranges and SHA-256."""
+from paperlens.paths import CACHE
 import concurrent.futures,hashlib,json,urllib.request
 from pathlib import Path
 import paperlens
@@ -8,7 +9,7 @@ REV="2a4f614a701367a02d51389039afc998faeda637"
 SHA="3fac2500c45c75af42c7711de0d1b93d59577456100208be0dc1f9e8811946b6"
 SIZE=87246587
 def main():
-    folder=ROOT/".cache"/"nli";folder.mkdir(parents=True,exist_ok=True)
+    folder=CACHE/"nli";folder.mkdir(parents=True,exist_ok=True)
     target=folder/"model.onnx"
     if not target.exists():
         parts=folder/"parts";parts.mkdir(exist_ok=True)

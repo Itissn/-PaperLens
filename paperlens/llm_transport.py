@@ -1,4 +1,5 @@
 """Server-configured local model transport; never expose its access key to UI."""
+from .paths import CACHE
 import json
 import os
 from pathlib import Path
@@ -8,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def local_request(payload,on_delta=None):
     endpoint=os.environ.get("PAPERLENS_LLM_BASE_URL","http://127.0.0.1:8766").rstrip("/")+"/v1/chat/completions"
-    key_path=Path(os.environ.get("PAPERLENS_LLM_KEY_FILE",str(ROOT/".cache"/"local-llm"/"api-key.txt")))
+    key_path=Path(os.environ.get("PAPERLENS_LLM_KEY_FILE",str(CACHE/"local-llm"/"api-key.txt")))
     headers={"Content-Type":"application/json"}
     if key_path.exists():headers["Authorization"]="Bearer "+key_path.read_text(encoding="ascii").strip()
     if on_delta:

@@ -1,4 +1,5 @@
 """CLI: ingest fixed public corpus, rebuild vectors, inspect status, run app."""
+from paperlens.paths import CACHE
 import argparse
 import json
 from pathlib import Path
@@ -47,7 +48,7 @@ def main():
             for p in json.loads(manifest.read_text(encoding="utf-8")):
                 result=ingest_bytes(store,(manifest.parent/p["file"]).read_bytes(),p["title"],p["source_url"],p["status"],args.chunk_words,args.overlap)
                 print("Corpus:",p["arxiv_id"],"duplicate" if result["duplicate"] else "imported",flush=True)
-        embedder=Embedder(ROOT/".cache"/"embeddings")
+        embedder=Embedder(CACHE/"embeddings")
         print("Embedded chunks:",embed_pending(store,embedder),flush=True)
     print(json.dumps(store.documents(),indent=2,ensure_ascii=True))
 

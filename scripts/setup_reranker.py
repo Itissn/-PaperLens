@@ -1,4 +1,5 @@
 """Verified, resumable official cross-encoder download for Windows proxy networks."""
+from paperlens.paths import CACHE
 import concurrent.futures,hashlib,json,shutil,urllib.request
 from pathlib import Path
 import paperlens
@@ -6,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 REPO="Xenova/ms-marco-MiniLM-L-6-v2"
 REV="a09144355adeed5f58c8ed011d209bf8ee5a1fec"
 def main():
-    folder=ROOT/".cache"/"reranker"/"verified-model"
+    folder=CACHE/"reranker"/"verified-model"
     folder.mkdir(parents=True,exist_ok=True)
     def read_json(url):
         with urllib.request.urlopen(url,timeout=60) as r:return json.load(r)
@@ -36,7 +37,7 @@ def main():
     with path.open("rb") as source:actual=hashlib.file_digest(source,"sha256").hexdigest()
     if actual!=expected:raise ValueError("Model checksum mismatch")
     for name in ["config.json","tokenizer.json","tokenizer_config.json","special_tokens_map.json"]:
-        cached=ROOT/".cache"/"reranker"/"models--Xenova--ms-marco-MiniLM-L-6-v2"/"snapshots"/REV/name
+        cached=CACHE/"reranker"/"models--Xenova--ms-marco-MiniLM-L-6-v2"/"snapshots"/REV/name
         if cached.exists():shutil.copy2(cached,folder/name)
         else:
             with urllib.request.urlopen(f"https://huggingface.co/{REPO}/resolve/{REV}/{name}",timeout=60) as r:(folder/name).write_bytes(r.read())

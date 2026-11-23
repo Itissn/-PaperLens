@@ -1,1 +1,1 @@
-"""Project setup and verification commands."""
+"""Local model setup and sample-document utilities."""

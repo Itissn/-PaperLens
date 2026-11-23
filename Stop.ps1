@@ -1,9 +1,10 @@
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
+. (Join-Path $root 'Local-Paths.ps1')
 $targets=@(
-    @{PidFile='reports/server.pid'; Executable=@((Join-Path $root '.runtime/python.exe'),(Join-Path $root '.venv/Scripts/python.exe')); Marker=(Join-Path $root 'manage.py')},
-    @{PidFile='reports/llm.pid'; Executable=(Join-Path $root '.cache/local-llm/bin/llama-server.exe'); Marker=(Join-Path $root '.cache/local-llm')},
-    @{PidFile='reports/ollama.pid'; Executable=(Join-Path $root '.cache/ollama/bin/ollama.exe'); Marker=(Join-Path $root '.cache/ollama')}
+    @{PidFile='reports/server.pid'; Executable=@($python); Marker=(Join-Path $root 'manage.py')},
+    @{PidFile='reports/llm.pid'; Executable=(Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm/bin/llama-server.exe'); Marker=(Join-Path $env:PAPERLENS_CACHE_DIR 'local-llm')},
+    @{PidFile='reports/ollama.pid'; Executable=(Join-Path $env:PAPERLENS_CACHE_DIR 'ollama/bin/ollama.exe'); Marker=(Join-Path $env:PAPERLENS_CACHE_DIR 'ollama')}
 )
 foreach($target in $targets){
     $file=Join-Path $root $target.PidFile

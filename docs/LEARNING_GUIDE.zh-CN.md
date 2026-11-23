@@ -1,10 +1,10 @@
-# PaperLens：从你的论文到可追溯问答
+﻿# PaperLens：从你的论文到可追溯问答
 
 这份教程用你已经熟悉的科研工作解释 RAG。先运行和观察，再读代码，最后改一个变量重做实验。所有默认计算都在本机完成，无需付费 API。
 
 ## 1. 先体验完整流程（约 15 分钟）
 
-1. 双击项目目录的 `Start.cmd`，打开 http://127.0.0.1:8765 。这台机器已准备独立 Python 环境、论文和向量索引。
+1. 双击项目目录的 `Start.cmd`，打开 http://127.0.0.1:8765 。先按 README 完成本机配置；新复制的源码不包含环境和模型。
 2. 保持“Hybrid · RRF / Extractive · No LLM”，输入：`How does DCL-GPGLS estimate instance difficulty?`
 3. 阅读“原文摘答”，点击引用旁的 `p.2` 等链接，核对 PDF。这里显示的是 PDF 文件的物理页码，封面也计入，未必等于文章印刷页码。
 4. 展开右侧的原文片段。比较“用户问题”“整块原文”“被选中的句子”三个层次。
@@ -13,7 +13,7 @@
 7. 打开左侧“Evaluate”，查看逐题失败结果，而不只看汇总数字。
 8. 输入 `How much did DCL-GPGLS reduce patient waiting times in a New Zealand hospital?` 。论文没有这项研究。观察系统是否明确表示证据不足。此题刻意暴露“看起来相关”和“实际有答案”的区别。
 
-**本机当前选择 Qwen2.5-3B Q4_K_M，保留原来的 1.5B 作为对照；3B 官方许可标为 qwen-research。出现流畅却不被来源支持的说法时，以原文为准。引用编号校验不能代替事实核查。**
+**本地精简版使用 Qwen2.5-3B Q4_K_M；3B 官方许可标为 qwen-research。出现流畅却不被来源支持的说法时，以原文为准。引用编号校验不能代替事实核查。**
 
 ## 2. 系统究竟做了什么
 
@@ -122,7 +122,7 @@ JSON schema 限制字段和允许引用的编号；后端再次检查引用是�
 
 ## 4. 怎样读评测结果
 
-`eval_cases.json` 的证据页和关键短语在首轮检索前通过查看 PDF 标注。12 个可回答问题 + 3 个语料无答案问题。它是一个小型开发集，标签不穷尽所有有效段落，不是独立测试集。
+`evaluation/eval_cases.json` 的证据页和关键短语在首轮检索前通过查看 PDF 标注。12 个可回答问题 + 3 个语料无答案问题。它是一个小型开发集，标签不穷尽所有有效段落，不是独立测试集。
 
 每个相关命中必须同时满足文档、PDF 页码和该页关键短语。避免只找到同一篇论文就算正确。
 
@@ -153,9 +153,10 @@ JSON schema 限制字段和允许引用的编号；后端再次检查引用是�
 在 PowerShell 中进入项目：
 
 ```powershell
+. .\Local-Paths.ps1
 cd <your-project-directory>
-.\.runtime\python.exe manage.py status
-.\.runtime\python.exe evaluate.py
+& $python manage.py status
+& $python evaluate.py
 ```
 
 ### 实验 A：精确词 vs 同义改写
@@ -172,8 +173,9 @@ cd <your-project-directory>
 新建实验数据库，保留默认索引：
 
 ```powershell
-.\.runtime\python.exe manage.py index --data-dir .cache/experiments/chunk180 --chunk-words 180 --overlap 40
-.\.runtime\python.exe evaluate.py --data-dir .cache/experiments/chunk180 --report reports/experiment-chunk180.json
+. .\Local-Paths.ps1
+& $python manage.py index --data-dir .cache/experiments/chunk180 --chunk-words 180 --overlap 40
+& $python evaluate.py --data-dir .cache/experiments/chunk180 --report reports/experiment-chunk180.json
 ```
 
 比较块数、Hit@5、MRR、证据页 Recall。更长的块可能增加上下文，也可能混入无关信息，并碰到编码器 token 长度限制。
@@ -209,8 +211,8 @@ cd <your-project-directory>
 | GET /api/evaluation | 读取固定评测报告 |
 
 ```powershell
-.\.runtime\python.exe -m pytest tests -q
-.\.runtime\python.exe scripts/browser_smoke.py
+. .\Local-Paths.ps1
+& $python -m pytest tests -q
 ```
 
 自动测试中使用的假向量/假服务是为了检查排序数学、故障分支和 HTTP 结构。真实论文向量检索另由评测与浏览器测试运行，真实 LLM 另有明确的本机运行记录。它们不是同一类证据。
@@ -229,10 +231,12 @@ cd <your-project-directory>
 
 Agent 已有真实本地模型 function calling：搜索词与论文页码由模型选择，工具执行结果反馈给下一轮模型。程序要求找到片段后读一页，再进行来源受限的最终回答；同时限制工具、参数和循环预算。网页展示实际工具轨迹。详见 [Agent 操作与代码教程](AGENT_GUIDE.zh-CN.md)。
 
-固定开发集上 Hybrid＋精排的 Hit@5 仍为 10/12，负题拒答从 1/3 变为 3/3，但正题覆盖从 12/12 降至 11/12；不能表述为全面提升准确率。独立语义核查仍需人工完成。
+历史版本的固定开发集上 Hybrid＋精排的 Hit@5 仍为 10/12，负题拒答从 1/3 变为 3/3，但正题覆盖从 12/12 降至 11/12；不能表述为全面提升准确率。独立语义核查仍需人工完成。
 
-Docker 的系统前置条件尚未满足。按你 21 日的决定暂不改系统，也没有实测容器；后续获得新授权再推进。多语言检索、表格解析、跨页上下文与人工评审仍可继续研究。
+当前为 Windows 本地精简版，容器部署文件已移出活动目录。多语言检索、表格解析、跨页上下文与人工评审仍可继续研究。
 
 
 ## v0.3 补充
-当前已加入真实流式进度、多轮历史、可选登录与权限、OCR、表格/基础公式处理和语义/完整性筛查。部分前文描述的是最初的 RAG 基线；请接着阅读 [v0.3 操作与代码说明](V03_GUIDE.zh-CN.md)，并以最新验证报告为准。Docker 仍按你的决定暂缓运行。
+当前已加入真实流式进度、多轮历史、可选登录与权限、OCR、表格/基础公式处理和语义/完整性筛查。部分前文描述的是最初的 RAG 基线；请接着阅读 [本机使用说明](LOCAL_DEPLOYMENT.zh-CN.md)，并以最新验证报告为准。旧版本的评测数字为历史记录，不代表本次重新评测。
+
+
